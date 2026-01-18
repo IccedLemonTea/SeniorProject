@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# Qt
+*.ui.autosave
+*.qmlc
+
+# Build / packaging
+build/
+dist/
+*.spec
+
+# Virtual environments
+.venv/
+venv/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+*.npy
+*.png

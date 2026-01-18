@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lwir-image-tool"
+version = "0.1.0"
+description = "LWIR calibration and processing toolkit"
+requires-python = ">=3.9"
+
+dependencies = [
+    "PySide6",
+    "LWIRImageTool"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
