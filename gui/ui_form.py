@@ -16,14 +16,15 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QIcon, QImage, QKeySequence, QLinearGradient,
     QPainter, QPalette, QPixmap, QRadialGradient,
     QTransform)
-from PySide6.QtWidgets import (QApplication, QMainWindow, QMenu, QMenuBar,
-    QProgressBar, QSizePolicy, QStatusBar, QWidget)
+from PySide6.QtWidgets import (QApplication, QListWidget, QListWidgetItem, QMainWindow,
+    QMenu, QMenuBar, QProgressBar, QSizePolicy,
+    QStatusBar, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(1080, 600)
+        MainWindow.resize(980, 681)
         self.actionOpenImage = QAction(MainWindow)
         self.actionOpenImage.setObjectName(u"actionOpenImage")
         self.actionOpenBBDirectory = QAction(MainWindow)
@@ -34,16 +35,19 @@ class Ui_MainWindow(object):
         self.centralwidget.setObjectName(u"centralwidget")
         self.progressBar = QProgressBar(self.centralwidget)
         self.progressBar.setObjectName(u"progressBar")
-        self.progressBar.setGeometry(QRect(780, 490, 271, 51))
+        self.progressBar.setGeometry(QRect(700, 580, 271, 51))
         self.progressBar.setValue(0)
         self.progressBar.setInvertedAppearance(False)
+        self.fileList = QListWidget(self.centralwidget)
+        self.fileList.setObjectName(u"fileList")
+        self.fileList.setGeometry(QRect(10, 10, 400, 400))
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QStatusBar(MainWindow)
         self.statusbar.setObjectName(u"statusbar")
         MainWindow.setStatusBar(self.statusbar)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1080, 19))
+        self.menubar.setGeometry(QRect(0, 0, 980, 19))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuEdit = QMenu(self.menubar)

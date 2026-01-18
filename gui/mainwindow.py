@@ -1,7 +1,7 @@
 # This Python file uses the following encoding: utf-8
 import sys
 import os
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QListWidget, QListWidgetItem
 from PySide6.QtCore import QObject, Signal, QThread
 import LWIRImageTool as lit
 from workers.CalibrationWorker import CalibrationWorker
@@ -18,17 +18,37 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
+        self.list_of_files = []
+
         # Connecting open image tab to trigger
         self.ui.actionOpenImage.triggered.connect(self.open_image)
         # Connecting Open Directory to trigger
         self.ui.actionOpenBBDirectory.triggered.connect(self.open_blackbody_directory)
 
-    
-    # Open a directory of images and store them within the GUI's memory
-    # Input : self
-    # Action : Asks user to select a dir path, then loads in all imagery within that dir.
+
     def calibration(self):
         print("Hello World!")
+
+        self.start_calibration(directory, filetype = 'rjpeg', rsr=None)
+
+    def open_rsr_txt(self):
+        rsr_path = QFileDialog.getOpenFileName(
+        self,
+        "Select RSR file path",
+        "","*.txt;;All Files (*)"
+        )
+
+        if not rsr_path:
+            return 
+        else:
+            QMessageBox.information(
+                self,
+                "RSR Selected",
+                f"You selected:\n{rsr_path}"
+                )
+            self.list_of_files.append(rsr_path)
+        
+            
     def open_blackbody_directory(self):
         directory = QFileDialog.getExistingDirectory(
             self,
@@ -37,29 +57,27 @@ class MainWindow(QMainWindow):
             )
 
         if not directory:
-            return  # User cancelled
-
-        QMessageBox.information(
+            QMessageBox.information(
             self,
-            "Directory Selected",
-            f"You selected:\n{directory}"
+            "No Directory Selected"
             )
+            return
+        else:
+            QMessageBox.information(
+                self,
+                "Directory Selected",
+                f"You selected:\n{directory}"
+                )
+            self.list_of_files.append(directory)
+            list_item = QListWidgetItem()
+            list_item.setData(0,directory)
+            self.ui.fileList.addItem(list_item)
+            list_item_2 = QListWidgetItem()
+            list_item_2.setData(0,"Oops")
+            self.ui.fileList.addItem(list_item_2)
 
-        rsr_path = QFileDialog.getOpenFileName(
-        self,
-        "Select RSR file path",
-        "","*.txt;;All Files (*)"
-        )
-
-        if not rsr_path:
-            return  # User cancelled
-
-        QMessageBox.information(
-            self,
-            "RSR Selected",
-            f"You selected:\n{rsr_path}"
-            )
-        self.start_calibration(directory, filetype = 'rjpeg', rsr=None)
+            
+        
 
     # Open a singular image to view
     # Input : self

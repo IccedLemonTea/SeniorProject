@@ -24,3 +24,5 @@ Thumbs.db
 
 *.npy
 *.png
+
+/LWIRImageTool/LWIR_Tool
