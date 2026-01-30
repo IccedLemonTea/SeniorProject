@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>980</width>
-    <height>674</height>
+    <width>1097</width>
+    <height>730</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,10 +17,10 @@
    <widget class="QProgressBar" name="progressBar">
     <property name="geometry">
      <rect>
-      <x>700</x>
-      <y>580</y>
-      <width>271</width>
-      <height>51</height>
+      <x>10</x>
+      <y>650</y>
+      <width>1081</width>
+      <height>31</height>
      </rect>
     </property>
     <property name="value">
@@ -34,9 +34,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>10</y>
+      <y>0</y>
       <width>201</width>
-      <height>621</height>
+      <height>641</height>
      </rect>
     </property>
     <layout class="QVBoxLayout" name="verticalLayout">
@@ -66,19 +66,84 @@
      </item>
     </layout>
    </widget>
-   <widget class="QLabel" name="imagelabel">
+   <widget class="QTabWidget" name="tabWidget">
+    <property name="enabled">
+     <bool>true</bool>
+    </property>
     <property name="geometry">
      <rect>
-      <x>250</x>
-      <y>20</y>
-      <width>711</width>
-      <height>551</height>
+      <x>220</x>
+      <y>0</y>
+      <width>881</width>
+      <height>641</height>
      </rect>
     </property>
-    <property name="text">
-     <string>TextLabel</string>
+    <property name="currentIndex">
+     <number>0</number>
     </property>
+    <widget class="QWidget" name="imageTab">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <attribute name="title">
+      <string>Image Preview</string>
+     </attribute>
+     <widget class="QWidget" name="verticalLayoutWidget">
+      <property name="geometry">
+       <rect>
+        <x>-1</x>
+        <y>-1</y>
+        <width>871</width>
+        <height>611</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="imageTabLayout"/>
+     </widget>
+     <widget class="QLabel" name="imagelabel">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>861</width>
+        <height>581</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+      <property name="alignment">
+       <set>Qt::AlignCenter</set>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="calTab">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <attribute name="title">
+      <string>Calibrate</string>
+     </attribute>
+    </widget>
+    <widget class="QWidget" name="nedtTab">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <attribute name="title">
+      <string>NEDT</string>
+     </attribute>
+    </widget>
+    <widget class="QWidget" name="stabilityTab">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
+     <attribute name="title">
+      <string>Stability</string>
+     </attribute>
+    </widget>
    </widget>
+   <zorder>tabWidget</zorder>
+   <zorder>progressBar</zorder>
+   <zorder>layoutWidget</zorder>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QMenuBar" name="menubar">
@@ -86,7 +151,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>980</width>
+     <width>1097</width>
      <height>19</height>
     </rect>
    </property>
@@ -95,24 +160,16 @@
      <string>File</string>
     </property>
     <addaction name="actionOpenImage"/>
+    <addaction name="actionOpenOther"/>
+   </widget>
+   <widget class="QMenu" name="menuWorkflow">
+    <property name="title">
+     <string>Workflow</string>
+    </property>
     <addaction name="actionOpenBBDirectory"/>
-    <addaction name="actionOpen_Other"/>
-   </widget>
-   <widget class="QMenu" name="menuEdit">
-    <property name="title">
-     <string>Calibrate</string>
-    </property>
-    <addaction name="actionChooseCalibration"/>
-   </widget>
-   <widget class="QMenu" name="menuView">
-    <property name="title">
-     <string>View</string>
-    </property>
-    <addaction name="actionView_Selected_Image"/>
    </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuEdit"/>
-   <addaction name="menuView"/>
+   <addaction name="menuWorkflow"/>
   </widget>
   <action name="actionOpenImage">
    <property name="text">
@@ -129,14 +186,9 @@
     <string>Calibration</string>
    </property>
   </action>
-  <action name="actionOpen_Other">
+  <action name="actionOpenOther">
    <property name="text">
     <string>Open Other</string>
-   </property>
-  </action>
-  <action name="actionView_Selected_Image">
-   <property name="text">
-    <string>View Selected Image</string>
    </property>
   </action>
  </widget>
