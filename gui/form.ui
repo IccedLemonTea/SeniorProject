@@ -30,42 +30,6 @@
      <bool>false</bool>
     </property>
    </widget>
-   <widget class="QWidget" name="layoutWidget">
-    <property name="geometry">
-     <rect>
-      <x>10</x>
-      <y>0</y>
-      <width>201</width>
-      <height>641</height>
-     </rect>
-    </property>
-    <layout class="QVBoxLayout" name="verticalLayout">
-     <item>
-      <widget class="QLabel" name="labelWorkspaceFiles">
-       <property name="font">
-        <font>
-         <pointsize>12</pointsize>
-        </font>
-       </property>
-       <property name="text">
-        <string>Workspace Files</string>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignCenter</set>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QListWidget" name="widgetWorkspaceList">
-       <property name="font">
-        <font>
-         <pointsize>7</pointsize>
-        </font>
-       </property>
-      </widget>
-     </item>
-    </layout>
-   </widget>
    <widget class="QTabWidget" name="tabWidget">
     <property name="enabled">
      <bool>true</bool>
@@ -91,29 +55,81 @@
      <widget class="QWidget" name="verticalLayoutWidget">
       <property name="geometry">
        <rect>
-        <x>-1</x>
-        <y>-1</y>
+        <x>0</x>
+        <y>0</y>
         <width>871</width>
         <height>611</height>
        </rect>
       </property>
-      <layout class="QVBoxLayout" name="imageTabLayout"/>
-     </widget>
-     <widget class="QLabel" name="imagelabel">
-      <property name="geometry">
-       <rect>
-        <x>10</x>
-        <y>10</y>
-        <width>861</width>
-        <height>581</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-      <property name="alignment">
-       <set>Qt::AlignCenter</set>
-      </property>
+      <layout class="QVBoxLayout" name="imageTabLayout">
+       <item>
+        <widget class="QLabel" name="imagelabel">
+         <property name="minimumSize">
+          <size>
+           <width>720</width>
+           <height>480</height>
+          </size>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="imageTabVSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>1</width>
+           <height>1</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout">
+         <item>
+          <widget class="QPushButton" name="priorFrame">
+           <property name="text">
+            <string>&lt;</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QSlider" name="frameSelection">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>50</height>
+            </size>
+           </property>
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="nextFrame">
+           <property name="text">
+            <string>&gt;</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPushButton" name="saveImage">
+           <property name="text">
+            <string>Save Image</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
      </widget>
     </widget>
     <widget class="QWidget" name="calTab">
@@ -123,6 +139,51 @@
      <attribute name="title">
       <string>Calibrate</string>
      </attribute>
+     <widget class="QWidget" name="verticalLayoutWidget_2">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>871</width>
+        <height>611</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="calTabLayout">
+       <item>
+        <widget class="QLabel" name="labelCaliFigs">
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>500</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>TextLabel</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <spacer name="verticalSpacer">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item>
+        <widget class="QPushButton" name="SavePlot">
+         <property name="text">
+          <string>Save Plot</string>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </widget>
     <widget class="QWidget" name="nedtTab">
      <property name="enabled">
@@ -140,6 +201,52 @@
       <string>Stability</string>
      </attribute>
     </widget>
+   </widget>
+   <widget class="QWidget" name="layoutWidget">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>0</y>
+      <width>201</width>
+      <height>641</height>
+     </rect>
+    </property>
+    <layout class="QVBoxLayout" name="verticalLayout">
+     <item>
+      <widget class="QLabel" name="labelProjectFiles">
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Project Files</string>
+       </property>
+       <property name="alignment">
+        <set>Qt::AlignCenter</set>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QTreeWidget" name="widgetProjectTreeList">
+       <column>
+        <property name="text">
+         <string>Current Project</string>
+        </property>
+       </column>
+       <item>
+        <property name="text">
+         <string>Project Files</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>Project Variables</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+    </layout>
    </widget>
    <zorder>tabWidget</zorder>
    <zorder>progressBar</zorder>
@@ -159,14 +266,19 @@
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="actionOpenImage"/>
-    <addaction name="actionOpenOther"/>
+    <addaction name="actionOpen_Project"/>
+    <addaction name="actionSave_Project"/>
+    <addaction name="actionNew_Project"/>
+    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuWorkflow">
     <property name="title">
      <string>Workflow</string>
     </property>
     <addaction name="actionOpenBBDirectory"/>
+    <addaction name="actionOpenImage"/>
+    <addaction name="actionOpenOther"/>
+    <addaction name="separator"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuWorkflow"/>
@@ -189,6 +301,21 @@
   <action name="actionOpenOther">
    <property name="text">
     <string>Open Other</string>
+   </property>
+  </action>
+  <action name="actionOpen_Project">
+   <property name="text">
+    <string>New Project</string>
+   </property>
+  </action>
+  <action name="actionSave_Project">
+   <property name="text">
+    <string>Open Project</string>
+   </property>
+  </action>
+  <action name="actionNew_Project">
+   <property name="text">
+    <string>Save Project</string>
    </property>
   </action>
  </widget>

@@ -2,11 +2,13 @@
 import sys
 import os
 from PySide6.QtGui import QPixmap, QImage
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QListWidget, QListWidgetItem, QLabel
-from PySide6.QtCore import QObject, Signal, QThread
+from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QListWidget, QListWidgetItem, QLabel, QTreeWidgetItem
+from PySide6.QtCore import QObject, Signal, Qt, QThread
 import LWIRImageTool as lit
-from workers.CalibrationWorker import CalibrationWorker
+from core.Workers import CalibrationWorker
+from core.image_display import prepare_for_qt
 import numpy as np
+
 
 # Important:
 # You need to run the following command to generate the ui_form.py file
@@ -20,6 +22,16 @@ class MainWindow(QMainWindow):
         self.ui = Ui_MainWindow()
         self.ui.setupUi(self)
 
+        # Disable tabs
+        for tab in [self.ui.imageTab, self.ui.calTab, self.ui.nedtTab, self.ui.stabilityTab]:
+            self.ui.tabWidget.setTabEnabled(
+                self.ui.tabWidget.indexOf(tab), False
+            )
+
+        # Force default tab (Image Preview)
+        self.ui.tabWidget.setCurrentIndex(
+            self.ui.tabWidget.indexOf(self.ui.imageTab)
+        )   
 
         ### GUI Wide Variables ###
         self.list_of_files = []
@@ -36,32 +48,45 @@ class MainWindow(QMainWindow):
 
         self.ui.actionChooseCalibration.triggered.connect(self.Calibration)
 
-        # self.ui.tabWidget.currentChanged.connect(self.OnTabChanged)
+        self.ui.tabWidget.currentChanged.connect(self.OnTabChanged)
 
-        self.ui.widgetWorkspaceList.itemClicked.connect(self.OnItemClicked)
+        self.ui.widgetProjectTreeList.itemClicked.connect(self.OnTreeClicked)
 
-        # Disable tabs
-        for tab in [self.ui.imageTab, self.ui.calTab, self.ui.nedtTab, self.ui.stabilityTab]:
-            self.ui.tabWidget.setTabEnabled(
-                self.ui.tabWidget.indexOf(tab), False
-            )
+        self.ui.frameSelection.valueChanged.connect(self.OnFrameChanged)
 
-        # Force default tab (Image Preview)
-        self.ui.tabWidget.setCurrentIndex(
-            self.ui.tabWidget.indexOf(self.ui.imageTab)
-        )
+        self.filesRoot = self.ui.widgetProjectTreeList.topLevelItem(0)
+        self.varsRoot  = self.ui.widgetProjectTreeList.topLevelItem(1)
 
 
+    def AddDirectoryToTree(self, directory):
+        root = QTreeWidgetItem(self.filesRoot)
+        root.setText(0, os.path.basename(directory))
+        root.setData(0, Qt.UserRole, directory)
 
-    # def OnTabChanged(self, index):
-    #     """Triggered when tab is switched"""
+        for fname in sorted(os.listdir(directory)):
+            child = QTreeWidgetItem(root)
+            child.setText(0, fname)
+            child.setData(0, Qt.UserRole, os.path.join(directory, fname))
 
-    #     tab_text = self.ui.tabWidget.tabText(index)
-    #     # Act based on index or label
-    #     if index == 0:
-    #         # self.ViewImage()
-    #     elif index == 1:
-    #         # self.Calibration()
+        root.setExpanded(False)
+
+    def OnFrameChanged(self, index):
+        if not hasattr(self, "current_dir_files"):
+            return
+
+        if 0 <= index < len(self.current_dir_files):
+            self.item_selected = self.current_dir_files[index]
+            self.ViewImage()
+
+    def OnTabChanged(self, index):
+        """Triggered when tab is switched"""
+
+        tab_text = self.ui.tabWidget.tabText(index)
+        # Act based on index or label
+        if index == 0:
+            self.ViewImage()
+        elif index == 1:
+            self.Calibration()
 
     # TODO
     def Calibration(self):
@@ -87,10 +112,10 @@ class MainWindow(QMainWindow):
                 f"You selected:\n{filepath}"
                 )
         # relative_path = os.path.relpath(filepath[0], self.home_dir)
-        self.list_of_files.append(filepath[0])
+        self.list_of_files.append(filepath)
         list_item = QListWidgetItem()
-        list_item.setData(0,filepath[0])
-        self.ui.widgetWorkspaceList.addItem(list_item)
+        list_item.setData(0,filepath)
+        self.ui.widgetProjectFileList.addItem(list_item)
         self.ui.tabWidget.setTabEnabled(self.ui.tabWidget.indexOf(self.ui.imageTab), True)
     
     def OpenRSRText(self):
@@ -111,7 +136,7 @@ class MainWindow(QMainWindow):
             self.list_of_files.append(rsr_path)     
             
     def OpenBlackbodyDirectory(self):
-        directory,_ = QFileDialog.getExistingDirectory(
+        directory = QFileDialog.getExistingDirectory(
             self,
             "Select Directory",
             ""
@@ -130,44 +155,57 @@ class MainWindow(QMainWindow):
                 f"You selected:\n{directory}"
                 )
             
-            relative_path = os.path.relpath(directory, self.home_dir)
             self.list_of_files.append(directory)
-            list_item = QListWidgetItem()
-            list_item.setData(0,directory)
-            self.ui.widgetWorkspaceList.addItem(list_item)
+            self.AddDirectoryToTree(directory)
             self.ui.tabWidget.setTabEnabled(self.ui.tabWidget.indexOf(self.ui.calTab), True)
             self.ui.tabWidget.setTabEnabled(self.ui.tabWidget.indexOf(self.ui.stabilityTab), True)
 
-    def OnItemClicked(self,item):
-        self.item_selected = item.text()
+            self.current_dir_files = sorted([
+            os.path.join(directory, f)
+            for f in os.listdir(directory)
+            ])
 
-    def ViewImage(self):
+            num_files = len(self.current_dir_files)
+            self.ui.frameSelection.setMinimum(0)
+            self.ui.frameSelection.setMaximum(max(0, num_files - 1))
+
+    def OnTreeClicked(self, item, column):
+        data = item.data(0, Qt.UserRole)
+
+        if isinstance(data, str) and os.path.isfile(data):
+            # disk file
+            self.item_selected = data
+            self.ViewImage()
+
+        elif isinstance(data, lit.ImageData):   # your image class
+            # in-memory image
+            qimg = prepare_for_qt(data.raw_counts)
+            self.ui.imagelabel.setPixmap(QPixmap.fromImage(qimg))
+
+    def ViewImage(self, frame=None):
+        if not self.item_selected:
+            return
+
         Factory = lit.ImageDataFactory()
-        config = lit.ImageDataConfig(filename = self.item_selected, fileformat = "rjpeg")
-        image = Factory.create_from_file(config)
-
-        arr = image.raw_counts
-
-        arr_disp = arr.astype(np.float32)
-        arr_disp -= arr_disp.min()
-        arr_disp /= arr_disp.max()
-        arr_disp *= 65535
-        arr_disp = arr_disp.astype(np.uint16)
-
-
-        h, w = arr.shape
-        bytes_per_line = w*2
-
-        q_image = QImage(
-            arr_disp.data,
-            w,
-            h,
-            bytes_per_line,
-            QImage.Format_Grayscale16
+        config = lit.ImageDataConfig(
+            filename=self.item_selected,
+            fileformat="rjpeg"
         )
 
-        pixmap = QPixmap.fromImage(q_image)
+        image = Factory.create_from_file(config)
+
+        qimg = prepare_for_qt(image.raw_counts)
+        pixmap = QPixmap.fromImage(qimg)
+
         self.ui.imagelabel.setPixmap(pixmap)
+
+        # Add to Variables section
+        var_item = QTreeWidgetItem(self.varsRoot)
+        var_item.setText(0, os.path.basename(self.item_selected))
+
+        # Store the ACTUAL image object
+        var_item.setData(0, Qt.UserRole, image)
+        self.ui.tabWidget.setTabEnabled(self.ui.tabWidget.indexOf(self.ui.imageTab), True)
 
     def StartCalibration(self, directory, filetype, rsr=None):
         self.thread = QThread()
