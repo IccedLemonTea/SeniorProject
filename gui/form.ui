@@ -43,7 +43,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>0</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="imageTab">
      <property name="enabled">
@@ -150,20 +150,28 @@
       </property>
       <layout class="QVBoxLayout" name="calTabLayout">
        <item>
-        <widget class="QLabel" name="labelCaliFigs">
+        <widget class="QWidget" name="calibrationPlotContainer" native="true">
          <property name="minimumSize">
           <size>
            <width>0</width>
            <height>500</height>
           </size>
          </property>
-         <property name="text">
-          <string>TextLabel</string>
-         </property>
+         <widget class="QWidget" name="verticalLayoutWidget_3">
+          <property name="geometry">
+           <rect>
+            <x>10</x>
+            <y>10</y>
+            <width>851</width>
+            <height>481</height>
+           </rect>
+          </property>
+          <layout class="QVBoxLayout" name="calPlotLayout"/>
+         </widget>
         </widget>
        </item>
        <item>
-        <spacer name="verticalSpacer">
+        <spacer name="calTabSpacer">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
          </property>
@@ -211,7 +219,7 @@
       <height>641</height>
      </rect>
     </property>
-    <layout class="QVBoxLayout" name="verticalLayout">
+    <layout class="QVBoxLayout" name="projectVertLayout">
      <item>
       <widget class="QLabel" name="labelProjectFiles">
        <property name="font">

@@ -109,15 +109,21 @@ class Ui_MainWindow(object):
         self.calTabLayout = QVBoxLayout(self.verticalLayoutWidget_2)
         self.calTabLayout.setObjectName(u"calTabLayout")
         self.calTabLayout.setContentsMargins(0, 0, 0, 0)
-        self.labelCaliFigs = QLabel(self.verticalLayoutWidget_2)
-        self.labelCaliFigs.setObjectName(u"labelCaliFigs")
-        self.labelCaliFigs.setMinimumSize(QSize(0, 500))
+        self.calibrationPlotContainer = QWidget(self.verticalLayoutWidget_2)
+        self.calibrationPlotContainer.setObjectName(u"calibrationPlotContainer")
+        self.calibrationPlotContainer.setMinimumSize(QSize(0, 500))
+        self.verticalLayoutWidget_3 = QWidget(self.calibrationPlotContainer)
+        self.verticalLayoutWidget_3.setObjectName(u"verticalLayoutWidget_3")
+        self.verticalLayoutWidget_3.setGeometry(QRect(10, 10, 851, 481))
+        self.calPlotLayout = QVBoxLayout(self.verticalLayoutWidget_3)
+        self.calPlotLayout.setObjectName(u"calPlotLayout")
+        self.calPlotLayout.setContentsMargins(0, 0, 0, 0)
 
-        self.calTabLayout.addWidget(self.labelCaliFigs)
+        self.calTabLayout.addWidget(self.calibrationPlotContainer)
 
-        self.verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.calTabSpacer = QSpacerItem(20, 40, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
 
-        self.calTabLayout.addItem(self.verticalSpacer)
+        self.calTabLayout.addItem(self.calTabSpacer)
 
         self.SavePlot = QPushButton(self.verticalLayoutWidget_2)
         self.SavePlot.setObjectName(u"SavePlot")
@@ -136,9 +142,9 @@ class Ui_MainWindow(object):
         self.layoutWidget = QWidget(self.centralwidget)
         self.layoutWidget.setObjectName(u"layoutWidget")
         self.layoutWidget.setGeometry(QRect(10, 0, 201, 641))
-        self.verticalLayout = QVBoxLayout(self.layoutWidget)
-        self.verticalLayout.setObjectName(u"verticalLayout")
-        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
+        self.projectVertLayout = QVBoxLayout(self.layoutWidget)
+        self.projectVertLayout.setObjectName(u"projectVertLayout")
+        self.projectVertLayout.setContentsMargins(0, 0, 0, 0)
         self.labelProjectFiles = QLabel(self.layoutWidget)
         self.labelProjectFiles.setObjectName(u"labelProjectFiles")
         font = QFont()
@@ -146,14 +152,14 @@ class Ui_MainWindow(object):
         self.labelProjectFiles.setFont(font)
         self.labelProjectFiles.setAlignment(Qt.AlignCenter)
 
-        self.verticalLayout.addWidget(self.labelProjectFiles)
+        self.projectVertLayout.addWidget(self.labelProjectFiles)
 
         self.widgetProjectTreeList = QTreeWidget(self.layoutWidget)
         QTreeWidgetItem(self.widgetProjectTreeList)
         QTreeWidgetItem(self.widgetProjectTreeList)
         self.widgetProjectTreeList.setObjectName(u"widgetProjectTreeList")
 
-        self.verticalLayout.addWidget(self.widgetProjectTreeList)
+        self.projectVertLayout.addWidget(self.widgetProjectTreeList)
 
         MainWindow.setCentralWidget(self.centralwidget)
         self.tabWidget.raise_()
@@ -184,7 +190,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(1)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -204,7 +210,6 @@ class Ui_MainWindow(object):
         self.nextFrame.setText(QCoreApplication.translate("MainWindow", u">", None))
         self.saveImage.setText(QCoreApplication.translate("MainWindow", u"Save Image", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.imageTab), QCoreApplication.translate("MainWindow", u"Image Preview", None))
-        self.labelCaliFigs.setText(QCoreApplication.translate("MainWindow", u"TextLabel", None))
         self.SavePlot.setText(QCoreApplication.translate("MainWindow", u"Save Plot", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.calTab), QCoreApplication.translate("MainWindow", u"Calibrate", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.nedtTab), QCoreApplication.translate("MainWindow", u"NEDT", None))
