@@ -17,5 +17,10 @@ class MplCanvas(QWidget):
         axs = self.figure.subplots(2, 3)
         return axs
 
+    def get_single_grid(self):
+        self.figure.clear()
+        ax = self.figure.add_subplot(111)
+        return ax
+
     def draw(self):
         self.canvas.draw()

@@ -584,7 +584,7 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <widget class="QWidget" name="imageTab">
          <property name="enabled">
@@ -744,7 +744,20 @@
          <attribute name="title">
           <string>Stability</string>
          </attribute>
-         <layout class="QVBoxLayout" name="verticalLayout_6"/>
+         <layout class="QVBoxLayout" name="verticalLayout_6">
+          <item>
+           <widget class="QWidget" name="stabilityPlotContainer" native="true">
+            <layout class="QVBoxLayout" name="stabilityPlotLayout"/>
+           </widget>
+          </item>
+          <item>
+           <widget class="QProgressBar" name="stabilityProgressBar">
+            <property name="value">
+             <number>24</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </widget>
       </item>

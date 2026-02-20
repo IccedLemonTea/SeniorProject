@@ -1,6 +1,7 @@
 # This Python file uses the following encoding: utf-8
 from PySide6.QtCore import QObject, Signal
 import LWIRImageTool as lit
+import numpy as np
 
 
 class CalibrationWorker(QObject):
@@ -18,17 +19,48 @@ class CalibrationWorker(QObject):
         factory = lit.CalibrationDataFactory()
 
         config = lit.BlackbodyCalibrationConfig(
-        directory = self.directory,
-        filetype = self.filetype,
-        blackbody_temperature = 283.15,
-        temperature_step = 5.0,
-        rsr = self.rsr,
-        progress_cb = self._progress_callback)
+            directory=self.directory,
+            filetype=self.filetype,
+            blackbody_temperature=283.15,
+            temperature_step=5.0,
+            rsr=self.rsr,
+            progress_cb=self._progress_callback
+        )
 
         result = factory.create(config)
-
         self.finished.emit(result)
 
+    def _progress_callback(self, phase, current, total):
+        self.progress.emit(phase, current, total)
+
+
+class StabilityWorker(QObject):
+    progress = Signal(str, int, int)   # phase, current, total
+    finished = Signal(object)          # processed 1D mean array
+    error = Signal(str)
+
+    def __init__(self, directory, filetype="rjpeg"):
+        super().__init__()
+        self.directory = directory
+        self.filetype = filetype
+
+    def run(self):
+        try:
+            image_stack = lit.stack_images(
+                self.directory,
+                filetype=self.filetype,
+                progress_cb=self._progress_callback
+            )
+
+            # Signal a brief processing phase for the mean computation
+            self.progress.emit("processing", 0, 1)
+            result = np.mean(image_stack, axis=(0, 1))
+            self.progress.emit("processing", 1, 1)
+
+            self.finished.emit(result)
+
+        except Exception as e:
+            self.error.emit(str(e))
 
     def _progress_callback(self, phase, current, total):
         self.progress.emit(phase, current, total)

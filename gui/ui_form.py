@@ -267,6 +267,19 @@ class Ui_MainWindow(object):
         self.stabilityTab.setEnabled(True)
         self.verticalLayout_6 = QVBoxLayout(self.stabilityTab)
         self.verticalLayout_6.setObjectName(u"verticalLayout_6")
+        self.stabilityPlotContainer = QWidget(self.stabilityTab)
+        self.stabilityPlotContainer.setObjectName(u"stabilityPlotContainer")
+        self.stabilityPlotLayout = QVBoxLayout(self.stabilityPlotContainer)
+        self.stabilityPlotLayout.setObjectName(u"stabilityPlotLayout")
+
+        self.verticalLayout_6.addWidget(self.stabilityPlotContainer)
+
+        self.stabilityProgressBar = QProgressBar(self.stabilityTab)
+        self.stabilityProgressBar.setObjectName(u"stabilityProgressBar")
+        self.stabilityProgressBar.setValue(24)
+
+        self.verticalLayout_6.addWidget(self.stabilityProgressBar)
+
         self.tabWidget.addTab(self.stabilityTab, "")
 
         self.mainHorzLayout.addWidget(self.tabWidget)
@@ -300,7 +313,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.tabWidget.setCurrentIndex(0)
+        self.tabWidget.setCurrentIndex(1)
 
 
         QMetaObject.connectSlotsByName(MainWindow)

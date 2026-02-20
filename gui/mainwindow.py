@@ -1,4 +1,5 @@
 # This Python file uses the following encoding: utf-8
+
 import sys
 import os
 from PySide6.QtGui import QPixmap, QImage
@@ -44,11 +45,14 @@ class MainWindow(QMainWindow):
         self.item_selected = ""
         self.current_image = None
         self.active_calibration = False
-        self.index = 0
+        self.index = None
 
         # ---- Matplotlib canvas inside calibration tab ----
         self.calCanvas = MplCanvas(self.ui.calibrationPlotContainer)
         self.ui.calPlotLayout.addWidget(self.calCanvas)
+
+        self.stabilityCanvas = MplCanvas(self.ui.stabilityPlotContainer)
+        self.ui.stabilityPlotLayout.addWidget(self.stabilityCanvas)
 
 
 
@@ -64,7 +68,7 @@ class MainWindow(QMainWindow):
         self.ui.actionChooseCalibration.triggered.connect(self.Calibration)
         self.ui.tabWidget.currentChanged.connect(self.OnTabChanged)
         self.ui.widgetProjectTreeList.itemClicked.connect(self.OnTreeClicked)
-        self.ui.frameSelection.valueChanged.connect(self.OnFrameChanged)
+        self.ui.frameSelection.sliderReleased.connect(self.UpdateSliderVal)
         self.filesRoot = self.ui.widgetProjectTreeList.topLevelItem(0)
         self.varsRoot  = self.ui.widgetProjectTreeList.topLevelItem(1)
         self.ui.saveImage.clicked.connect(self.SaveImage)
@@ -76,12 +80,14 @@ class MainWindow(QMainWindow):
         if self.index < max_index:
             self.index = self.index + 1
             self.ui.frameSelection.setValue(self.index)
+            self.OnFrameChanged()
               
     def PriorFrame(self):
 
         if self.index > 0:
             self.index = self.index -1
             self.ui.frameSelection.setValue(self.index)
+            self.OnFrameChanged()
             
     def AddDirectoryToTree(self, directory):
         root = QTreeWidgetItem(self.filesRoot)
@@ -95,6 +101,10 @@ class MainWindow(QMainWindow):
 
         root.setExpanded(False)
 
+    def UpdateSliderVal(self):
+        self.index = self.ui.frameSelection.value()
+        self.OnFrameChanged()
+
     def OnFrameChanged(self):
         if 0 <= self.index < len(self.current_dir_files):
             self.item_selected = self.current_dir_files[self.index]
@@ -106,9 +116,13 @@ class MainWindow(QMainWindow):
         tab_text = self.ui.tabWidget.tabText(index)
         # Act based on index or label
         if index == 0:
-            self.ViewImage()
+            return
         elif index == 1:
             self.Calibration()
+        elif index == 2:
+            self.NEdTCalc()
+        elif index == 3:
+            self.Stability()
 
     def Calibration(self):
         if not self.active_calibration:
@@ -120,31 +134,36 @@ class MainWindow(QMainWindow):
             )
 
             if reply == QMessageBox.No:
-                return   # user chickened out
+                return   # User chickened out
 
-            # ---- Open advanced dialog ----
+            # Open advanced dialog 
             dlg = CalibrationDialog(self)
 
-            if dlg.exec():   # User pressed Start
-                settings = dlg.getValues()
+            if os.path.isdir(self.item_selected):
+                if dlg.exec():   # User pressed Start
+                    settings = dlg.getValues()
 
-                if settings["use_rsr"]:
-                    self.StartCalibration(self.item_selected, "rjpeg")
-                else:
-                    fwhm_width = float(settings["fwhm_width"])
-                    fwhm_center = float(settings["fwhm_center"])
-                    num_samples = int(settings["num_samples"])
+                    if settings["use_rsr"]:
+                        self.StartCalibration(self.item_selected, "rjpeg")
+                    else:
+                        fwhm_width = float(settings["fwhm_width"])
+                        fwhm_center = float(settings["fwhm_center"])
+                        num_samples = int(settings["num_samples"])
 
-                    ### Generating Rect FWHM for simulated RSR ###
-                    wavelengths = np.linspace(fwhm_center-fwhm_width/2.0, fwhm_center+fwhm_width/2.0, num_samples)
-                    response = np.ones(shape=[num_samples], dtype=float)
-                    response[0] = 0.5
-                    response[response.shape[0]-1] = 0.5
-                    rsr_sim = np.array([wavelengths, response])
+                        ### Generating Rect FWHM for simulated RSR ###
+                        wavelengths = np.linspace(fwhm_center-fwhm_width/2.0, fwhm_center+fwhm_width/2.0, num_samples)
+                        response = np.ones(shape=[num_samples], dtype=float)
+                        response[0] = 0.5
+                        response[response.shape[0]-1] = 0.5
+                        rsr_sim = np.array([wavelengths, response])
 
-                    print(rsr_sim)
-
-                    self.StartCalibration(self.item_selected, "rjpeg", rsr = rsr_sim)
+                        self.StartCalibration(self.item_selected, "rjpeg", rsr = rsr_sim)
+            else:
+                QMessageBox.critical(
+                self,
+                "Error",
+                f"The current item selected in the Project Files is not a directory.")
+                return
         else: 
             QMessageBox.information(
                 self,
@@ -232,9 +251,15 @@ class MainWindow(QMainWindow):
             ])
             Factory = lit.ImageDataFactory()
             list_of_valid_files = [f for f in self.current_dir_files if Factory.is_valid_image_file(f, "rjpeg")]
+
+            # Setting bounds for QSlider
             num_files = len(list_of_valid_files)
             self.ui.frameSelection.setMinimum(0)
             self.ui.frameSelection.setMaximum(max(0, num_files - 1))
+
+            # Loading first image to image viewer
+            self.index = 0
+            self.OnFrameChanged()
 
     def OnTreeClicked(self, item, column):
         data = item.data(0, Qt.UserRole)
@@ -245,6 +270,7 @@ class MainWindow(QMainWindow):
             # Find index of file in current_dir_files
             try:
                 self.index = self.current_dir_files.index(data)
+                self.OnFrameChanged()
             except ValueError:
                 self.index = 0
 
@@ -257,7 +283,6 @@ class MainWindow(QMainWindow):
         elif isinstance(data, str) and os.path.isdir(data):
             # Directory
             self.item_selected = data
-            print(data)
 
     def ViewImage(self):
         if not self.item_selected:
@@ -423,6 +448,82 @@ class MainWindow(QMainWindow):
 
         # Store the ACTUAL image object
         var_item.setData(0, Qt.UserRole, self.current_image)
+
+    def NEdTCalc(self):
+        print("Placeholder") # TODO
+    
+    def Stability(self):
+        if isinstance(self.item_selected, str) and os.path.isdir(self.item_selected):
+            self.StartStability(self.item_selected)
+
+    def StartStability(self, directory):
+        from core.Workers import StabilityWorker  # already imported at top if you prefer
+
+        self.stability_thread = QThread()
+        self.stability_worker = StabilityWorker(directory, filetype="rjpeg")
+
+        self.stability_worker.moveToThread(self.stability_thread)
+
+        # Wiring
+        self.stability_thread.started.connect(self.stability_worker.run)
+        self.stability_worker.progress.connect(self.UpdateStabilityProgress)
+        self.stability_worker.finished.connect(self.StabilityFinished)
+        self.stability_worker.error.connect(self.StabilityError)
+
+        # Cleanup
+        self.stability_worker.finished.connect(self.stability_thread.quit)
+        self.stability_worker.finished.connect(self.stability_worker.deleteLater)
+        self.stability_thread.finished.connect(self.stability_thread.deleteLater)
+        self.stability_worker.error.connect(self.stability_thread.quit)
+
+        # UI state
+        self.ui.stabilityProgressBar.setValue(0)
+        self.ui.stabilityProgressBar.setFormat("Starting stability analysis...")
+
+        self.stability_thread.start()
+
+    def UpdateStabilityProgress(self, phase, current, total):
+        if total > 0:
+            percent = int((current / total) * 100)
+        else:
+            percent = 0
+
+        if phase == "loading":
+            self.ui.stabilityProgressBar.setRange(0, 100)
+            self.ui.stabilityProgressBar.setFormat("Stacking images... %p%")
+        elif phase == "processing":
+            self.ui.stabilityProgressBar.setRange(0, 100)
+            self.ui.stabilityProgressBar.setFormat("Computing mean... %p%")
+
+        self.ui.stabilityProgressBar.setValue(percent)
+
+    def StabilityFinished(self, result):
+        self.ui.stabilityProgressBar.setRange(0, 100)
+        self.ui.stabilityProgressBar.setValue(100)
+        self.ui.stabilityProgressBar.setFormat("Stability analysis complete")
+
+        ax = self.stabilityCanvas.get_single_grid()
+        ax.plot(result)
+        self.stabilityCanvas.draw()
+
+        self.stability_data = result
+        # Add to Variables section
+        var_item = QTreeWidgetItem(self.varsRoot)
+        var_item.setText(0, os.path.basename(self.item_selected))
+
+        # Store the ACTUAL image object
+        var_item.setData(0, Qt.UserRole, result)
+
+        QMessageBox.information(
+            self,
+            "Stability Finished",
+            "Stability run completed successfully."
+        )
+    def StabilityError(self, message):
+        self.ui.stabilityProgressBar.setRange(0, 100)
+        self.ui.stabilityProgressBar.setValue(0)
+        self.ui.stabilityProgressBar.setFormat("Error")
+        QMessageBox.critical(self, "Stability Error", f"An error occurred:\n{message}")
 
 
 
