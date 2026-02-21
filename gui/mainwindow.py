@@ -12,6 +12,7 @@ from core.plot_canvas import MplCanvas
 from core.pixel_stats import prepare_pixel
 from core.calibration_dialog import CalibrationDialog
 import numpy as np
+from core.project_serializer import save_project, load_project
 
 
 # Important:
@@ -76,6 +77,8 @@ class MainWindow(QMainWindow):
         self.ui.priorFrame.clicked.connect(self.PriorFrame)
         self.ui.rowTextEdit.textChanged.connect(self.OnPixelInputChanged)
         self.ui.colTextEdit.textChanged.connect(self.OnPixelInputChanged)
+        self.ui.actionSave_Project.triggered.connect(self.SaveProject)
+        self.ui.actionOpen_Project.triggered.connect(self.LoadProject)
 
     def NextFrame(self):
         max_index = len(self.current_dir_files)
@@ -543,9 +546,58 @@ class MainWindow(QMainWindow):
         self.ui.stabilityProgressBar.setFormat("Error")
         QMessageBox.critical(self, "Stability Error", f"An error occurred:\n{message}")
 
+    def SaveProject(self):
+        folder_path = QFileDialog.getExistingDirectory(
+            self,
+            "Select folder to save project into",
+            self.home_dir,
+        )
 
+        if not folder_path:
+            return
 
+        # Default project subfolder name based on current directory selection
+        default_name = (
+            os.path.basename(self.item_selected)
+            if self.item_selected else "lwir_project"
+        )
+        project_folder = os.path.join(folder_path, default_name)
 
+        try:
+            save_project(self, project_folder)
+            QMessageBox.information(
+                self,
+                "Project Saved",
+                f"Project saved to:\n{project_folder}\n\n"
+                f"  project.json  — manifest\n"
+                f"  arrays.npz    — calibration coefficients, image stack, stability data"
+            )
+        except Exception as e:
+            QMessageBox.critical(self, "Save Error", f"Failed to save project:\n{str(e)}")
+
+    def LoadProject(self):
+        folder_path = QFileDialog.getExistingDirectory(
+            self,
+            "Select project folder to open",
+            self.home_dir,
+        )
+
+        if not folder_path:
+            return
+
+        try:
+            load_project(self, folder_path)
+            QMessageBox.information(
+                self,
+                "Project Loaded",
+                f"Project loaded from:\n{folder_path}"
+            )
+        except FileNotFoundError as e:
+            QMessageBox.critical(self, "Load Error",
+                                f"Could not find project files:\n{str(e)}\n\n"
+                                f"Make sure you selected a folder containing project.json.")
+        except Exception as e:
+            QMessageBox.critical(self, "Load Error", f"Failed to load project:\n{str(e)}")
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
