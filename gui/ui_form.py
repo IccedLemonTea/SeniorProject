@@ -241,6 +241,26 @@ class Ui_MainWindow(object):
 
         self.calCoefficientLayout = QHBoxLayout()
         self.calCoefficientLayout.setObjectName(u"calCoefficientLayout")
+        self.rowLayout = QVBoxLayout()
+        self.rowLayout.setObjectName(u"rowLayout")
+        self.rowLayout.setContentsMargins(100, -1, 100, -1)
+        self.labelRow = QLabel(self.calTab)
+        self.labelRow.setObjectName(u"labelRow")
+        self.labelRow.setMaximumSize(QSize(200, 30))
+        self.labelRow.setAlignment(Qt.AlignCenter)
+
+        self.rowLayout.addWidget(self.labelRow)
+
+        self.rowTextEdit = QPlainTextEdit(self.calTab)
+        self.rowTextEdit.setObjectName(u"rowTextEdit")
+        self.rowTextEdit.setMaximumSize(QSize(50, 30))
+        self.rowTextEdit.setFont(font)
+
+        self.rowLayout.addWidget(self.rowTextEdit)
+
+
+        self.calCoefficientLayout.addLayout(self.rowLayout)
+
         self.colLayout = QVBoxLayout()
         self.colLayout.setSpacing(6)
         self.colLayout.setObjectName(u"colLayout")
@@ -265,32 +285,12 @@ class Ui_MainWindow(object):
 
         self.calCoefficientLayout.addLayout(self.colLayout)
 
-        self.rowLayout = QVBoxLayout()
-        self.rowLayout.setObjectName(u"rowLayout")
-        self.rowLayout.setContentsMargins(100, -1, 100, -1)
-        self.labelRow = QLabel(self.calTab)
-        self.labelRow.setObjectName(u"labelRow")
-        self.labelRow.setMaximumSize(QSize(200, 30))
-        self.labelRow.setAlignment(Qt.AlignCenter)
-
-        self.rowLayout.addWidget(self.labelRow)
-
-        self.rowTextEdit = QPlainTextEdit(self.calTab)
-        self.rowTextEdit.setObjectName(u"rowTextEdit")
-        self.rowTextEdit.setMaximumSize(QSize(50, 30))
-        self.rowTextEdit.setFont(font)
-
-        self.rowLayout.addWidget(self.rowTextEdit)
-
-
-        self.calCoefficientLayout.addLayout(self.rowLayout)
-
         self.calCoeffLabelLayout = QVBoxLayout()
         self.calCoeffLabelLayout.setObjectName(u"calCoeffLabelLayout")
         self.calCoeffLabelLayout.setSizeConstraint(QLayout.SetMaximumSize)
         self.labelCalCoef = QLabel(self.calTab)
         self.labelCalCoef.setObjectName(u"labelCalCoef")
-        self.labelCalCoef.setMinimumSize(QSize(430, 30))
+        self.labelCalCoef.setMinimumSize(QSize(405, 30))
         self.labelCalCoef.setMaximumSize(QSize(500, 16777215))
         self.labelCalCoef.setAlignment(Qt.AlignCenter)
 
@@ -300,13 +300,25 @@ class Ui_MainWindow(object):
         self.gainbiasLayout.setObjectName(u"gainbiasLayout")
         self.labelGain = QLabel(self.calTab)
         self.labelGain.setObjectName(u"labelGain")
+        self.labelGain.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
 
         self.gainbiasLayout.addWidget(self.labelGain)
 
+        self.labelGainCoeff = QLabel(self.calTab)
+        self.labelGainCoeff.setObjectName(u"labelGainCoeff")
+
+        self.gainbiasLayout.addWidget(self.labelGainCoeff)
+
         self.labelBias = QLabel(self.calTab)
         self.labelBias.setObjectName(u"labelBias")
+        self.labelBias.setAlignment(Qt.AlignRight|Qt.AlignTrailing|Qt.AlignVCenter)
 
         self.gainbiasLayout.addWidget(self.labelBias)
+
+        self.labelBiasCoeff = QLabel(self.calTab)
+        self.labelBiasCoeff.setObjectName(u"labelBiasCoeff")
+
+        self.gainbiasLayout.addWidget(self.labelBiasCoeff)
 
 
         self.calCoeffLabelLayout.addLayout(self.gainbiasLayout)
@@ -403,9 +415,9 @@ class Ui_MainWindow(object):
         self.actionOpenBBDirectory.setText(QCoreApplication.translate("MainWindow", u"Open Directory", None))
         self.actionChooseCalibration.setText(QCoreApplication.translate("MainWindow", u"Calibration", None))
         self.actionOpenOther.setText(QCoreApplication.translate("MainWindow", u"Open Other", None))
-        self.actionOpen_Project.setText(QCoreApplication.translate("MainWindow", u"New Project", None))
-        self.actionSave_Project.setText(QCoreApplication.translate("MainWindow", u"Open Project", None))
-        self.actionNew_Project.setText(QCoreApplication.translate("MainWindow", u"Save Project", None))
+        self.actionOpen_Project.setText(QCoreApplication.translate("MainWindow", u"Open Project", None))
+        self.actionSave_Project.setText(QCoreApplication.translate("MainWindow", u"Save Project", None))
+        self.actionNew_Project.setText(QCoreApplication.translate("MainWindow", u"New Project", None))
         self.labelProjectFiles.setText(QCoreApplication.translate("MainWindow", u"Project Files", None))
         ___qtreewidgetitem = self.widgetProjectTreeList.headerItem()
         ___qtreewidgetitem.setText(0, QCoreApplication.translate("MainWindow", u"Current Project", None));
@@ -424,13 +436,15 @@ class Ui_MainWindow(object):
         self.nextFrame.setText(QCoreApplication.translate("MainWindow", u">", None))
         self.saveImage.setText(QCoreApplication.translate("MainWindow", u"Save Image", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.imageTab), QCoreApplication.translate("MainWindow", u"Image Preview", None))
-        self.labelCol.setText(QCoreApplication.translate("MainWindow", u"Column", None))
-        self.colTextEdit.setPlainText(QCoreApplication.translate("MainWindow", u"1", None))
         self.labelRow.setText(QCoreApplication.translate("MainWindow", u"Row", None))
         self.rowTextEdit.setPlainText(QCoreApplication.translate("MainWindow", u"1", None))
+        self.labelCol.setText(QCoreApplication.translate("MainWindow", u"Column", None))
+        self.colTextEdit.setPlainText(QCoreApplication.translate("MainWindow", u"1", None))
         self.labelCalCoef.setText(QCoreApplication.translate("MainWindow", u"Calibration Coefficients", None))
         self.labelGain.setText(QCoreApplication.translate("MainWindow", u"Gain :", None))
+        self.labelGainCoeff.setText(QCoreApplication.translate("MainWindow", u"0.00", None))
         self.labelBias.setText(QCoreApplication.translate("MainWindow", u"Bias : ", None))
+        self.labelBiasCoeff.setText(QCoreApplication.translate("MainWindow", u"0.00", None))
         self.SavePlot.setText(QCoreApplication.translate("MainWindow", u"Save Plot", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.calTab), QCoreApplication.translate("MainWindow", u"Calibrate", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.nedtTab), QCoreApplication.translate("MainWindow", u"NEDT", None))

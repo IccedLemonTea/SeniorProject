@@ -364,7 +364,7 @@ class MainWindow(QMainWindow):
         self.calibration_data = cal_array
         # Add to Variables section
         var_item = QTreeWidgetItem(self.varsRoot)
-        var_item.setText(0, os.path.basename(self.item_selected))
+        var_item.setText(0, str(os.path.basename(self.item_selected) + "_calibration"))
 
         # Store the ACTUAL image object
         var_item.setData(0, Qt.UserRole, cal_array)
@@ -529,7 +529,7 @@ class MainWindow(QMainWindow):
         self.stability_data = result
         # Add to Variables section
         var_item = QTreeWidgetItem(self.varsRoot)
-        var_item.setText(0, os.path.basename(self.item_selected))
+        var_item.setText(0, str(os.path.basename(self.item_selected) + "_stability"))
 
         # Store the ACTUAL image object
         var_item.setData(0, Qt.UserRole, result)
