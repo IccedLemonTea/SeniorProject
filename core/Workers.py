@@ -9,7 +9,7 @@ class CalibrationWorker(QObject):
     finished = Signal(object)          # calibration array
     error = Signal(str)
 
-    def __init__(self, directory, filetype, rsr=None):
+    def __init__(self, directory : str, filetype, rsr: str=None):
         super().__init__()
         self.directory = directory
         self.filetype = filetype
@@ -39,7 +39,7 @@ class StabilityWorker(QObject):
     finished = Signal(object)          # processed 1D mean array
     error = Signal(str)
 
-    def __init__(self, directory, filetype="rjpeg"):
+    def __init__(self, directory : str, filetype: str ="rjpeg"):
         super().__init__()
         self.directory = directory
         self.filetype = filetype

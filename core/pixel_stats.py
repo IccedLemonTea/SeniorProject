@@ -3,6 +3,10 @@ import LWIRImageTool
 import os            
 
 def prepare_pixel(arr : np.array, row: int, col: int):
+    """
+    Prepares a single pixel from the calibration array to plot
+    
+    """
     stack = arr.image_stack
     array_of_avg_coords = arr.find_ascensions(stack, 3, 0.001, [])
 

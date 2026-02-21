@@ -12,7 +12,7 @@ class CalibrationDialog(QDialog):
 
         layout = QVBoxLayout(self)
 
-        # ---- Question 1 ----
+        # ───── Question 1 ─────────────────────────────────────────────────────
         layout.addWidget(QLabel("Are you using a real RSR file?"))
 
         self.rsrYes = QRadioButton("Yes, I have an RSR")
@@ -27,7 +27,7 @@ class CalibrationDialog(QDialog):
         layout.addWidget(self.rsrYes)
         layout.addWidget(self.rsrNo)
 
-        # ---- FWHM Input ----
+        # ──── FWHM Input ─────────────────────────────────────────────────────
         self.fwhmWLabel = QLabel("Enter FWHM width (µm):")
         self.fwhmWInput = QLineEdit()
         self.fwhmWInput.setPlaceholderText("e.g. 2.0")
@@ -57,7 +57,7 @@ class CalibrationDialog(QDialog):
         self.numSamplesInput.hide()
         self.numSamplesLabel.hide()
 
-        # ---- Buttons ----
+        # ──── Buttons ─────────────────────────────────────────────────────
         btnLayout = QHBoxLayout()
         self.okBtn = QPushButton("Start Calibration")
         self.cancelBtn = QPushButton("Cancel")
@@ -67,7 +67,7 @@ class CalibrationDialog(QDialog):
 
         layout.addLayout(btnLayout)
 
-        # ---- Connections ----
+        # ──── Connections ─────────────────────────────────────────────────────
         self.rsrNo.toggled.connect(self.toggleFWHM)
         self.okBtn.clicked.connect(self.accept)
         self.cancelBtn.clicked.connect(self.reject)
