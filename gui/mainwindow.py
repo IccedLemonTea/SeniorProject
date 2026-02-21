@@ -74,6 +74,8 @@ class MainWindow(QMainWindow):
         self.ui.saveImage.clicked.connect(self.SaveImage)
         self.ui.nextFrame.clicked.connect(self.NextFrame)
         self.ui.priorFrame.clicked.connect(self.PriorFrame)
+        self.ui.rowTextEdit.textChanged.connect(self.OnPixelInputChanged)
+        self.ui.colTextEdit.textChanged.connect(self.OnPixelInputChanged)
 
     def NextFrame(self):
         max_index = len(self.current_dir_files)
@@ -104,6 +106,19 @@ class MainWindow(QMainWindow):
     def UpdateSliderVal(self):
         self.index = self.ui.frameSelection.value()
         self.OnFrameChanged()
+
+    def OnPixelInputChanged(self):
+        try:
+            row = int(self.ui.rowTextEdit.toPlainText())
+            col = int(self.ui.colTextEdit.toPlainText())
+        except ValueError:
+            return  # Silently ignore incomplete/invalid input while typing
+
+        if not hasattr(self, 'calibration_data') or self.calibration_data is None:
+            return
+        
+        pixel_stats = prepare_pixel(self.calibration_data, row, col)
+        self.ViewCalibrationInfo(pixel_stats)
 
     def OnFrameChanged(self):
         if 0 <= self.index < len(self.current_dir_files):
@@ -358,7 +373,9 @@ class MainWindow(QMainWindow):
         )
         self.ui.tabWidget.setTabEnabled(self.ui.tabWidget.indexOf(self.ui.nedtTab), True)
         
-        pixel_stats = prepare_pixel(cal_array, 1, 1)
+        row = int(self.ui.rowTextEdit.toPlainText())
+        col = int(self.ui.colTextEdit.toPlainText())
+        pixel_stats = prepare_pixel(cal_array, row, col)
         
         self.ViewCalibrationInfo(pixel_stats)
 
@@ -519,6 +536,7 @@ class MainWindow(QMainWindow):
             "Stability Finished",
             "Stability run completed successfully."
         )
+    
     def StabilityError(self, message):
         self.ui.stabilityProgressBar.setRange(0, 100)
         self.ui.stabilityProgressBar.setValue(0)

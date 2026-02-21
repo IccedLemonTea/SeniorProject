@@ -18,9 +18,9 @@ from PySide6.QtGui import (QAction, QBrush, QColor, QConicalGradient,
     QTransform)
 from PySide6.QtWidgets import (QApplication, QHBoxLayout, QHeaderView, QLabel,
     QLayout, QMainWindow, QMenu, QMenuBar,
-    QProgressBar, QPushButton, QSizePolicy, QSlider,
-    QSpacerItem, QStatusBar, QTabWidget, QTreeWidget,
-    QTreeWidgetItem, QVBoxLayout, QWidget)
+    QPlainTextEdit, QProgressBar, QPushButton, QSizePolicy,
+    QSlider, QSpacerItem, QStatusBar, QTabWidget,
+    QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -239,7 +239,85 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addWidget(self.calibrationPlotContainer)
 
-        self.calTabSpacer = QSpacerItem(20, 169, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Expanding)
+        self.calCoefficientLayout = QHBoxLayout()
+        self.calCoefficientLayout.setObjectName(u"calCoefficientLayout")
+        self.colLayout = QVBoxLayout()
+        self.colLayout.setSpacing(6)
+        self.colLayout.setObjectName(u"colLayout")
+        self.colLayout.setSizeConstraint(QLayout.SetDefaultConstraint)
+        self.colLayout.setContentsMargins(100, -1, 100, -1)
+        self.labelCol = QLabel(self.calTab)
+        self.labelCol.setObjectName(u"labelCol")
+        self.labelCol.setMinimumSize(QSize(50, 0))
+        self.labelCol.setMaximumSize(QSize(100, 30))
+        self.labelCol.setAlignment(Qt.AlignCenter)
+
+        self.colLayout.addWidget(self.labelCol)
+
+        self.colTextEdit = QPlainTextEdit(self.calTab)
+        self.colTextEdit.setObjectName(u"colTextEdit")
+        self.colTextEdit.setMinimumSize(QSize(50, 30))
+        self.colTextEdit.setMaximumSize(QSize(50, 30))
+        self.colTextEdit.setFont(font)
+
+        self.colLayout.addWidget(self.colTextEdit)
+
+
+        self.calCoefficientLayout.addLayout(self.colLayout)
+
+        self.rowLayout = QVBoxLayout()
+        self.rowLayout.setObjectName(u"rowLayout")
+        self.rowLayout.setContentsMargins(100, -1, 100, -1)
+        self.labelRow = QLabel(self.calTab)
+        self.labelRow.setObjectName(u"labelRow")
+        self.labelRow.setMaximumSize(QSize(200, 30))
+        self.labelRow.setAlignment(Qt.AlignCenter)
+
+        self.rowLayout.addWidget(self.labelRow)
+
+        self.rowTextEdit = QPlainTextEdit(self.calTab)
+        self.rowTextEdit.setObjectName(u"rowTextEdit")
+        self.rowTextEdit.setMaximumSize(QSize(50, 30))
+        self.rowTextEdit.setFont(font)
+
+        self.rowLayout.addWidget(self.rowTextEdit)
+
+
+        self.calCoefficientLayout.addLayout(self.rowLayout)
+
+        self.calCoeffLabelLayout = QVBoxLayout()
+        self.calCoeffLabelLayout.setObjectName(u"calCoeffLabelLayout")
+        self.calCoeffLabelLayout.setSizeConstraint(QLayout.SetMaximumSize)
+        self.labelCalCoef = QLabel(self.calTab)
+        self.labelCalCoef.setObjectName(u"labelCalCoef")
+        self.labelCalCoef.setMinimumSize(QSize(430, 30))
+        self.labelCalCoef.setMaximumSize(QSize(500, 16777215))
+        self.labelCalCoef.setAlignment(Qt.AlignCenter)
+
+        self.calCoeffLabelLayout.addWidget(self.labelCalCoef)
+
+        self.gainbiasLayout = QHBoxLayout()
+        self.gainbiasLayout.setObjectName(u"gainbiasLayout")
+        self.labelGain = QLabel(self.calTab)
+        self.labelGain.setObjectName(u"labelGain")
+
+        self.gainbiasLayout.addWidget(self.labelGain)
+
+        self.labelBias = QLabel(self.calTab)
+        self.labelBias.setObjectName(u"labelBias")
+
+        self.gainbiasLayout.addWidget(self.labelBias)
+
+
+        self.calCoeffLabelLayout.addLayout(self.gainbiasLayout)
+
+
+        self.calCoefficientLayout.addLayout(self.calCoeffLabelLayout)
+
+
+        self.verticalLayout_2.addLayout(self.calCoefficientLayout)
+
+        self.calTabSpacer = QSpacerItem(20, 2, QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Minimum)
 
         self.verticalLayout_2.addItem(self.calTabSpacer)
 
@@ -276,7 +354,7 @@ class Ui_MainWindow(object):
 
         self.stabilityProgressBar = QProgressBar(self.stabilityTab)
         self.stabilityProgressBar.setObjectName(u"stabilityProgressBar")
-        self.stabilityProgressBar.setValue(24)
+        self.stabilityProgressBar.setValue(0)
 
         self.verticalLayout_6.addWidget(self.stabilityProgressBar)
 
@@ -346,6 +424,13 @@ class Ui_MainWindow(object):
         self.nextFrame.setText(QCoreApplication.translate("MainWindow", u">", None))
         self.saveImage.setText(QCoreApplication.translate("MainWindow", u"Save Image", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.imageTab), QCoreApplication.translate("MainWindow", u"Image Preview", None))
+        self.labelCol.setText(QCoreApplication.translate("MainWindow", u"Column", None))
+        self.colTextEdit.setPlainText(QCoreApplication.translate("MainWindow", u"1", None))
+        self.labelRow.setText(QCoreApplication.translate("MainWindow", u"Row", None))
+        self.rowTextEdit.setPlainText(QCoreApplication.translate("MainWindow", u"1", None))
+        self.labelCalCoef.setText(QCoreApplication.translate("MainWindow", u"Calibration Coefficients", None))
+        self.labelGain.setText(QCoreApplication.translate("MainWindow", u"Gain :", None))
+        self.labelBias.setText(QCoreApplication.translate("MainWindow", u"Bias : ", None))
         self.SavePlot.setText(QCoreApplication.translate("MainWindow", u"Save Plot", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.calTab), QCoreApplication.translate("MainWindow", u"Calibrate", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.nedtTab), QCoreApplication.translate("MainWindow", u"NEDT", None))
