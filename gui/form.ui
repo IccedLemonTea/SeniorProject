@@ -584,7 +584,7 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="imageTab">
          <property name="enabled">
@@ -890,14 +890,14 @@
            </spacer>
           </item>
           <item>
-           <widget class="QPushButton" name="SavePlot">
+           <widget class="QPushButton" name="pushSaveCal">
             <property name="text">
              <string>Save Plot</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QProgressBar" name="progressBar">
+           <widget class="QProgressBar" name="progressbarCal">
             <property name="value">
              <number>0</number>
             </property>
@@ -915,7 +915,126 @@
          <attribute name="title">
           <string>NEDT</string>
          </attribute>
-         <layout class="QVBoxLayout" name="verticalLayout_5"/>
+         <layout class="QVBoxLayout" name="verticalLayout_5">
+          <item>
+           <widget class="QWidget" name="widgetNEDTPlot" native="true">
+            <property name="minimumSize">
+             <size>
+              <width>700</width>
+              <height>500</height>
+             </size>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_4"/>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="layoutNEDTRowCol">
+            <item>
+             <layout class="QVBoxLayout" name="layoutNEDTRow">
+              <property name="leftMargin">
+               <number>200</number>
+              </property>
+              <property name="rightMargin">
+               <number>200</number>
+              </property>
+              <item>
+               <widget class="QLabel" name="labelNEDTRow">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>200</width>
+                  <height>30</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Row</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QTextEdit" name="texteditNEDTRow">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>50</width>
+                  <height>30</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QVBoxLayout" name="layoutNEDTCol">
+              <property name="leftMargin">
+               <number>200</number>
+              </property>
+              <property name="rightMargin">
+               <number>200</number>
+              </property>
+              <item>
+               <widget class="QLabel" name="labelNEDTCol">
+                <property name="maximumSize">
+                 <size>
+                  <width>200</width>
+                  <height>30</height>
+                 </size>
+                </property>
+                <property name="text">
+                 <string>Column</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QTextEdit" name="texteditNEDTCol">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>50</width>
+                  <height>40</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushSaveNEDT">
+            <property name="text">
+             <string>Save NEDT Plot</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
         <widget class="QWidget" name="stabilityTab">
          <property name="enabled">
@@ -931,7 +1050,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QProgressBar" name="stabilityProgressBar">
+           <widget class="QProgressBar" name="progressbarStability">
             <property name="value">
              <number>0</number>
             </property>

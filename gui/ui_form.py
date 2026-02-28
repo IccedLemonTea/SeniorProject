@@ -20,7 +20,8 @@ from PySide6.QtWidgets import (QApplication, QHBoxLayout, QHeaderView, QLabel,
     QLayout, QMainWindow, QMenu, QMenuBar,
     QPlainTextEdit, QProgressBar, QPushButton, QSizePolicy,
     QSlider, QSpacerItem, QStatusBar, QTabWidget,
-    QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget)
+    QTextEdit, QTreeWidget, QTreeWidgetItem, QVBoxLayout,
+    QWidget)
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -333,17 +334,17 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_2.addItem(self.calTabSpacer)
 
-        self.SavePlot = QPushButton(self.calTab)
-        self.SavePlot.setObjectName(u"SavePlot")
+        self.pushSaveCal = QPushButton(self.calTab)
+        self.pushSaveCal.setObjectName(u"pushSaveCal")
 
-        self.verticalLayout_2.addWidget(self.SavePlot)
+        self.verticalLayout_2.addWidget(self.pushSaveCal)
 
-        self.progressBar = QProgressBar(self.calTab)
-        self.progressBar.setObjectName(u"progressBar")
-        self.progressBar.setValue(0)
-        self.progressBar.setInvertedAppearance(False)
+        self.progressbarCal = QProgressBar(self.calTab)
+        self.progressbarCal.setObjectName(u"progressbarCal")
+        self.progressbarCal.setValue(0)
+        self.progressbarCal.setInvertedAppearance(False)
 
-        self.verticalLayout_2.addWidget(self.progressBar)
+        self.verticalLayout_2.addWidget(self.progressbarCal)
 
         self.tabWidget.addTab(self.calTab, "")
         self.nedtTab = QWidget()
@@ -351,6 +352,72 @@ class Ui_MainWindow(object):
         self.nedtTab.setEnabled(True)
         self.verticalLayout_5 = QVBoxLayout(self.nedtTab)
         self.verticalLayout_5.setObjectName(u"verticalLayout_5")
+        self.widgetNEDTPlot = QWidget(self.nedtTab)
+        self.widgetNEDTPlot.setObjectName(u"widgetNEDTPlot")
+        self.widgetNEDTPlot.setMinimumSize(QSize(700, 500))
+        self.verticalLayout_4 = QVBoxLayout(self.widgetNEDTPlot)
+        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
+
+        self.verticalLayout_5.addWidget(self.widgetNEDTPlot)
+
+        self.layoutNEDTRowCol = QHBoxLayout()
+        self.layoutNEDTRowCol.setObjectName(u"layoutNEDTRowCol")
+        self.layoutNEDTRow = QVBoxLayout()
+        self.layoutNEDTRow.setObjectName(u"layoutNEDTRow")
+        self.layoutNEDTRow.setContentsMargins(200, -1, 200, -1)
+        self.labelNEDTRow = QLabel(self.nedtTab)
+        self.labelNEDTRow.setObjectName(u"labelNEDTRow")
+        sizePolicy1 = QSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        sizePolicy1.setHorizontalStretch(0)
+        sizePolicy1.setVerticalStretch(0)
+        sizePolicy1.setHeightForWidth(self.labelNEDTRow.sizePolicy().hasHeightForWidth())
+        self.labelNEDTRow.setSizePolicy(sizePolicy1)
+        self.labelNEDTRow.setMinimumSize(QSize(0, 0))
+        self.labelNEDTRow.setMaximumSize(QSize(200, 30))
+        self.labelNEDTRow.setAlignment(Qt.AlignCenter)
+
+        self.layoutNEDTRow.addWidget(self.labelNEDTRow)
+
+        self.texteditNEDTRow = QTextEdit(self.nedtTab)
+        self.texteditNEDTRow.setObjectName(u"texteditNEDTRow")
+        sizePolicy.setHeightForWidth(self.texteditNEDTRow.sizePolicy().hasHeightForWidth())
+        self.texteditNEDTRow.setSizePolicy(sizePolicy)
+        self.texteditNEDTRow.setMaximumSize(QSize(50, 30))
+
+        self.layoutNEDTRow.addWidget(self.texteditNEDTRow)
+
+
+        self.layoutNEDTRowCol.addLayout(self.layoutNEDTRow)
+
+        self.layoutNEDTCol = QVBoxLayout()
+        self.layoutNEDTCol.setObjectName(u"layoutNEDTCol")
+        self.layoutNEDTCol.setContentsMargins(200, -1, 200, -1)
+        self.labelNEDTCol = QLabel(self.nedtTab)
+        self.labelNEDTCol.setObjectName(u"labelNEDTCol")
+        self.labelNEDTCol.setMaximumSize(QSize(200, 30))
+        self.labelNEDTCol.setAlignment(Qt.AlignCenter)
+
+        self.layoutNEDTCol.addWidget(self.labelNEDTCol)
+
+        self.texteditNEDTCol = QTextEdit(self.nedtTab)
+        self.texteditNEDTCol.setObjectName(u"texteditNEDTCol")
+        sizePolicy.setHeightForWidth(self.texteditNEDTCol.sizePolicy().hasHeightForWidth())
+        self.texteditNEDTCol.setSizePolicy(sizePolicy)
+        self.texteditNEDTCol.setMaximumSize(QSize(50, 40))
+
+        self.layoutNEDTCol.addWidget(self.texteditNEDTCol)
+
+
+        self.layoutNEDTRowCol.addLayout(self.layoutNEDTCol)
+
+
+        self.verticalLayout_5.addLayout(self.layoutNEDTRowCol)
+
+        self.pushSaveNEDT = QPushButton(self.nedtTab)
+        self.pushSaveNEDT.setObjectName(u"pushSaveNEDT")
+
+        self.verticalLayout_5.addWidget(self.pushSaveNEDT)
+
         self.tabWidget.addTab(self.nedtTab, "")
         self.stabilityTab = QWidget()
         self.stabilityTab.setObjectName(u"stabilityTab")
@@ -364,11 +431,11 @@ class Ui_MainWindow(object):
 
         self.verticalLayout_6.addWidget(self.stabilityPlotContainer)
 
-        self.stabilityProgressBar = QProgressBar(self.stabilityTab)
-        self.stabilityProgressBar.setObjectName(u"stabilityProgressBar")
-        self.stabilityProgressBar.setValue(0)
+        self.progressbarStability = QProgressBar(self.stabilityTab)
+        self.progressbarStability.setObjectName(u"progressbarStability")
+        self.progressbarStability.setValue(0)
 
-        self.verticalLayout_6.addWidget(self.stabilityProgressBar)
+        self.verticalLayout_6.addWidget(self.progressbarStability)
 
         self.tabWidget.addTab(self.stabilityTab, "")
 
@@ -403,7 +470,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.tabWidget.setCurrentIndex(1)
+        self.tabWidget.setCurrentIndex(2)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -445,8 +512,11 @@ class Ui_MainWindow(object):
         self.labelGainCoeff.setText(QCoreApplication.translate("MainWindow", u"0.00", None))
         self.labelBias.setText(QCoreApplication.translate("MainWindow", u"Bias : ", None))
         self.labelBiasCoeff.setText(QCoreApplication.translate("MainWindow", u"0.00", None))
-        self.SavePlot.setText(QCoreApplication.translate("MainWindow", u"Save Plot", None))
+        self.pushSaveCal.setText(QCoreApplication.translate("MainWindow", u"Save Plot", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.calTab), QCoreApplication.translate("MainWindow", u"Calibrate", None))
+        self.labelNEDTRow.setText(QCoreApplication.translate("MainWindow", u"Row", None))
+        self.labelNEDTCol.setText(QCoreApplication.translate("MainWindow", u"Column", None))
+        self.pushSaveNEDT.setText(QCoreApplication.translate("MainWindow", u"Save NEDT Plot", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.nedtTab), QCoreApplication.translate("MainWindow", u"NEDT", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.stabilityTab), QCoreApplication.translate("MainWindow", u"Stability", None))
         self.menuFile.setTitle(QCoreApplication.translate("MainWindow", u"File", None))

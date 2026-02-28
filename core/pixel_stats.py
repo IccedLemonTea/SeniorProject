@@ -1,5 +1,5 @@
 import numpy as np
-import LWIRImageTool
+import LWIRImageTool as lit
 import os            
 
 def prepare_pixel(arr : np.array, row: int, col: int):
@@ -8,7 +8,7 @@ def prepare_pixel(arr : np.array, row: int, col: int):
     
     """
     stack = arr.image_stack
-    array_of_avg_coords = arr.find_ascensions(stack, 3, 0.001, [])
+    array_of_avg_coords = lit.BlackbodyCalibration.find_ascensions(stack, 3, 0.001, [])
 
     individual_pixel = stack[row,col,:]
     chunk_size = int(individual_pixel.shape[0]*0.001)
@@ -42,7 +42,7 @@ def prepare_pixel(arr : np.array, row: int, col: int):
 
 
     ### Generating blackbody band radiances ###
-    blackbody = LWIRImageTool.Blackbody()
+    blackbody = lit.Blackbody()
     band_radiances = []
 
     txt_content = np.loadtxt("/home/cjw9009/Desktop/suas_data/FLIRSIRAS_CalData/flir_boson_with_13mm_45fov.txt", skiprows=1, delimiter=',')

@@ -2,8 +2,9 @@
 
 import sys
 import os
+from tkinter import NE
 from PySide6.QtGui import QPixmap, QImage
-from PySide6.QtWidgets import QApplication, QMainWindow, QFileDialog, QMessageBox, QListWidget, QListWidgetItem, QLabel, QTreeWidgetItem
+from PySide6.QtWidgets import QApplication, QInputDialog, QMainWindow, QFileDialog, QMessageBox, QListWidget, QListWidgetItem, QLabel, QTreeWidgetItem
 from PySide6.QtCore import QObject, Signal, Qt, QThread
 import LWIRImageTool as lit
 from core.Workers import CalibrationWorker
@@ -55,8 +56,6 @@ class MainWindow(QMainWindow):
         self.stabilityCanvas = MplCanvas(self.ui.stabilityPlotContainer)
         self.ui.stabilityPlotLayout.addWidget(self.stabilityCanvas)
 
-
-
         # Necessary for ease of access, limits the amount of text in the file list
         self.home_dir = os.path.expanduser("~")
 
@@ -79,6 +78,31 @@ class MainWindow(QMainWindow):
         self.ui.colTextEdit.textChanged.connect(self.OnPixelInputChanged)
         self.ui.actionSave_Project.triggered.connect(self.SaveProject)
         self.ui.actionOpen_Project.triggered.connect(self.LoadProject)
+        self.ui.actionOpenOther.triggered.connect(self.OpenOther)
+
+    def OpenOther(self):
+        # QFileDialog for opening other types of files (e.g. txts for NEdT, or other image formats)
+        filepath,_ = QFileDialog.getOpenFileName(
+            self,
+            "Select file path",
+            "","All Files (*)"
+        )
+        if not filepath:
+            QMessageBox.information(
+            self,
+            "No File Selected"
+            )
+            return
+        else:
+            QMessageBox.information(
+                self,
+                "File Selected",
+                f"You selected:\n{filepath}"
+                )
+            self.list_of_files.append(filepath)
+            list_item = QTreeWidgetItem(self.filesRoot)
+            list_item.setText(0, os.path.basename(filepath))
+            list_item.setData(0, Qt.UserRole, filepath)
 
     def NextFrame(self):
         max_index = len(self.current_dir_files)
@@ -111,17 +135,28 @@ class MainWindow(QMainWindow):
         self.OnFrameChanged()
 
     def OnPixelInputChanged(self):
-        try:
-            row = int(self.ui.rowTextEdit.toPlainText())
-            col = int(self.ui.colTextEdit.toPlainText())
-        except ValueError:
-            return  # Silently ignore incomplete/invalid input while typing
 
-        if not hasattr(self, 'calibration_data') or self.calibration_data is None:
-            return
-        
-        pixel_stats = prepare_pixel(self.calibration_data, row, col)
-        self.ViewCalibrationInfo(pixel_stats)
+        tab_index = self.ui.tabWidget.currentIndex()
+        if tab_index == 1:  # Calibration tab is active
+            try:
+                row = int(self.ui.rowTextEdit.toPlainText())
+                col = int(self.ui.colTextEdit.toPlainText())
+            except ValueError:
+                return  # Silently ignore incomplete/invalid input while typing
+            if not hasattr(self, 'calibration_data') or self.calibration_data is None:
+                return
+            # Check to see which tab is active, if calibration tab is active, update the pixel stats plot with the new row and column
+            pixel_stats = prepare_pixel(self.calibration_data, row, col)
+
+            self.ui.labelGainCoeff.setText(f"{pixel_stats[7]:.4f}")
+            self.ui.labelBiasCoeff.setText(f"{pixel_stats[8]:.4f}")
+            self.ViewCalibrationInfo(pixel_stats)
+        elif tab_index == 2: # NEdT tab is active
+            if hasattr(self, 'NEdT_Data'):
+                row = int(self.ui.texteditNEDTRow.toPlainText())
+                col = int(self.ui.texteditNEDTCol.toPlainText())
+                nedt_pixel = self.NEdT_Data[row, col]
+                self.ViewNEDTInfo(nedt_pixel)
 
     def OnFrameChanged(self):
         if 0 <= self.index < len(self.current_dir_files):
@@ -338,8 +373,8 @@ class MainWindow(QMainWindow):
         self.thread.finished.connect(self.thread.deleteLater)
 
         # UI state
-        self.ui.progressBar.setValue(0)
-        self.ui.progressBar.setFormat("Starting calibration...")
+        self.ui.progressbarCal.setValue(0)
+        self.ui.progressbarCal.setFormat("Starting calibration...")
 
         self.thread.start()
 
@@ -349,17 +384,17 @@ class MainWindow(QMainWindow):
         percent = int((current / total) * 100)
 
         if phase == "loading":
-            self.ui.progressBar.setFormat("Loading images... %p%")
+            self.ui.progressbarCal.setFormat("Loading images... %p%")
         elif phase == "calibrating":
-            self.ui.progressBar.setFormat("Calibrating pixels... %p%")
+            self.ui.progressbarCal.setFormat("Calibrating pixels... %p%")
         elif phase == "ascension":
-            self.ui.progressBar.setFormat("Calculating ascension regions... %p%")
+            self.ui.progressbarCal.setFormat("Calculating ascension regions... %p%")
 
-        self.ui.progressBar.setValue(percent)
+        self.ui.progressbarCal.setValue(percent)
 
     def CalibrationFinished(self, cal_array):
-        self.ui.progressBar.setValue(100)
-        self.ui.progressBar.setFormat("Calibration complete")
+        self.ui.progressbarCal.setValue(100)
+        self.ui.progressbarCal.setFormat("Calibration complete")
 
         self.calibration_data = cal_array
         # Add to Variables section
@@ -470,8 +505,75 @@ class MainWindow(QMainWindow):
         var_item.setData(0, Qt.UserRole, self.current_image)
 
     def NEdTCalc(self):
-        print("Placeholder") # TODO
-    
+        # Prompt the user to select a text file containing RSR data within it.
+        # The prompt should use only text files from the QTreeWidget that are not directories and have been loaded into the project.
+        rsr_files = []
+        for i in range(self.filesRoot.childCount()):
+            child = self.filesRoot.child(i)
+            data = child.data(0, Qt.UserRole)
+            if isinstance(data, str) and os.path.isfile(data) and data.endswith('.txt'):
+                rsr_files.append((child.text(0), data))
+        if not rsr_files:
+            QMessageBox.critical(
+                self,
+                "No RSR Files",
+                "No text files were found in the Project Files. Please load an RSR text file into the project to perform NEdT calculation."
+            )
+            return
+        # if there are more than one, prompt the user to select which one to use
+        elif len(rsr_files) > 1:
+            items = [name for name, path in rsr_files]
+            item, ok = QInputDialog.getItem(
+                self,
+                "Select RSR File",
+                "Multiple text files found. Please select the RSR file to use for NEdT calculation:",
+                items,
+                0,
+                False
+            )
+            if not ok:
+                return
+            selected_path = next(path for name, path in rsr_files if name == item)
+            QMessageBox.information(
+                self,
+                "RSR File Selected",
+                f"You selected:\n{item}"
+            )
+        else:
+            selected_path = rsr_files[0][1]
+            QMessageBox.information(
+                self,
+                "RSR File Selected",
+                f"Using RSR file:\n{rsr_files[0][0]}"
+            )   
+        
+        print(f"Using RSR file for NEdT calculation: {rsr_files[0][0]}")
+
+        # Parse the RSR file to get wavelength and response arrays
+        txt_content = np.loadtxt(selected_path, skiprows=1, delimiter=',')
+        wavelengths = txt_content[:, 0]
+        response = txt_content[:, 1]
+        
+        temps = [
+        283.15, 288.15, 293.15, 298.15, 303.15, 308.15, 313.15, 318.15, 323.15,
+        328.15, 333.15, 338.15, 343.15
+        ]
+
+        self.NEdT_Data = lit.NEDT.NEdT_calculation(self.calibration_data.image_stack, self.calibration_data.coefficients, temps, wavelengths, response)
+
+        print(self.NEdT_Data.shape)
+
+    def ViewNEDTInfo(self, nedt_pixel):
+        axs = self.calCanvas.get_single_grid()
+
+        axs.plot(nedt_pixel)
+        axs.set_title(f"NEdT over time at pixel location ({self.ui.texteditNEDTRow.toPlainText()},{self.ui.texteditNEDTCol.toPlainText()})")
+        axs.set_xlabel("Frame number")
+        axs.set_ylabel("NEdT [K]")
+
+        self.calCanvas.figure.tight_layout()
+        self.calCanvas.draw()
+
     def Stability(self):
         if isinstance(self.item_selected, str) and os.path.isdir(self.item_selected):
             self.StartStability(self.item_selected)
@@ -497,8 +599,8 @@ class MainWindow(QMainWindow):
         self.stability_worker.error.connect(self.stability_thread.quit)
 
         # UI state
-        self.ui.stabilityProgressBar.setValue(0)
-        self.ui.stabilityProgressBar.setFormat("Starting stability analysis...")
+        self.ui.progressbarStability.setValue(0)
+        self.ui.progressbarStability.setFormat("Starting stability analysis...")
 
         self.stability_thread.start()
 
@@ -509,21 +611,24 @@ class MainWindow(QMainWindow):
             percent = 0
 
         if phase == "loading":
-            self.ui.stabilityProgressBar.setRange(0, 100)
-            self.ui.stabilityProgressBar.setFormat("Stacking images... %p%")
+            self.ui.progressbarStability.setRange(0, 100)
+            self.ui.progressbarStability.setFormat("Stacking images... %p%")
         elif phase == "processing":
-            self.ui.stabilityProgressBar.setRange(0, 100)
-            self.ui.stabilityProgressBar.setFormat("Computing mean... %p%")
+            self.ui.progressbarStability.setRange(0, 100)
+            self.ui.progressbarStability.setFormat("Computing mean... %p%")
 
-        self.ui.stabilityProgressBar.setValue(percent)
+        self.ui.progressbarStability.setValue(percent)
 
     def StabilityFinished(self, result):
-        self.ui.stabilityProgressBar.setRange(0, 100)
-        self.ui.stabilityProgressBar.setValue(100)
-        self.ui.stabilityProgressBar.setFormat("Stability analysis complete")
+        self.ui.progressbarStability.setRange(0, 100)
+        self.ui.progressbarStability.setValue(100)
+        self.ui.progressbarStability.setFormat("Stability analysis complete")
 
         ax = self.stabilityCanvas.get_single_grid()
         ax.plot(result)
+        ax.set_title("Mean pixel value across frames")
+        ax.set_xlabel("Frame number")
+        ax.set_ylabel("Mean Digital Count")
         self.stabilityCanvas.draw()
 
         self.stability_data = result
@@ -541,9 +646,9 @@ class MainWindow(QMainWindow):
         )
     
     def StabilityError(self, message):
-        self.ui.stabilityProgressBar.setRange(0, 100)
-        self.ui.stabilityProgressBar.setValue(0)
-        self.ui.stabilityProgressBar.setFormat("Error")
+        self.ui.progressbarStability.setRange(0, 100)
+        self.ui.progressbarStability.setValue(0)
+        self.ui.progressbarStability.setFormat("Error")
         QMessageBox.critical(self, "Stability Error", f"An error occurred:\n{message}")
 
     def SaveProject(self):
