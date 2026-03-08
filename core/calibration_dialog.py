@@ -79,6 +79,8 @@ class CalibrationDialog(QDialog):
         self.fwhmCInput.setVisible(checked)
         self.numSamplesLabel.setVisible(checked)
         self.numSamplesInput.setVisible(checked)
+    
+        
 
     # Helper to return data cleanly
     def getValues(self):
