@@ -9,20 +9,21 @@ class CalibrationWorker(QObject):
     finished = Signal(object)          # calibration array
     error = Signal(str)
 
-    def __init__(self, directory : str, filetype, rsr: str=None):
+    def __init__(self, directory : str, filetype, rsr: str=None, bb_start_temp=None, bb_temp_step=None):
         super().__init__()
         self.directory = directory
         self.filetype = filetype
         self.rsr = rsr
-
+        self.bb_start_temp = bb_start_temp
+        self.bb_temp_step = bb_temp_step
     def run(self):
         factory = lit.CalibrationDataFactory()
 
         config = lit.BlackbodyCalibrationConfig(
             directory=self.directory,
             filetype=self.filetype,
-            blackbody_temperature=283.15,
-            temperature_step=5.0,
+            blackbody_temperature=self.bb_start_temp,
+            temperature_step=self.bb_temp_step,
             rsr=self.rsr,
             progress_cb=self._progress_callback
         )

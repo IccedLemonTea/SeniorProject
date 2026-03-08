@@ -10,10 +10,14 @@ class CalibrationDialog(QDialog):
         self.setWindowTitle("Calibration Options")
         self.setPalette(parent.palette())
 
-        layout = QVBoxLayout(self)
+        Hlayout = QHBoxLayout(self)
+        Vlayout = QVBoxLayout()
+        Templayout = QVBoxLayout()
+        Hlayout.addLayout(Vlayout)
+        Hlayout.addLayout(Templayout)
 
         # ───── Question 1 ─────────────────────────────────────────────────────
-        layout.addWidget(QLabel("Are you using a real RSR file?"))
+        Vlayout.addWidget(QLabel("Are you using a real RSR file?"))
 
         self.rsrYes = QRadioButton("Yes, I have an RSR")
         self.rsrNo = QRadioButton("No, simulate RSR")
@@ -24,8 +28,22 @@ class CalibrationDialog(QDialog):
         self.group.addButton(self.rsrYes)
         self.group.addButton(self.rsrNo)
 
-        layout.addWidget(self.rsrYes)
-        layout.addWidget(self.rsrNo)
+        Vlayout.addWidget(self.rsrYes)
+        Vlayout.addWidget(self.rsrNo)
+
+        # ───── Question 2 ─────────────────────────────────────────────────────
+        Templayout.addWidget(QLabel("What is the temperature of your environment?"))
+        self.tempInput = QLineEdit()
+        self.tempInput.setPlaceholderText("e.g. 303.15.0 [K]")
+        Templayout.addWidget(self.tempInput)
+        Templayout.addWidget(QLabel("What is the starting temperature of your blackbody?"))
+        self.bbTempInput = QLineEdit()
+        self.bbTempInput.setPlaceholderText("e.g. 283.15 [K]")
+        Templayout.addWidget(self.bbTempInput)
+        Templayout.addWidget(QLabel("What are the temperature steps of your blackbody?"))
+        self.tempStepInput = QLineEdit()
+        self.tempStepInput.setPlaceholderText("e.g. 1.0 [K]")
+        Templayout.addWidget(self.tempStepInput)
 
         # ──── FWHM Input ─────────────────────────────────────────────────────
         self.fwhmWLabel = QLabel("Enter FWHM width (µm):")
@@ -42,12 +60,12 @@ class CalibrationDialog(QDialog):
 
 
 
-        layout.addWidget(self.fwhmWLabel)
-        layout.addWidget(self.fwhmWInput)
-        layout.addWidget(self.fwhmCLabel)
-        layout.addWidget(self.fwhmCInput)
-        layout.addWidget(self.numSamplesLabel)
-        layout.addWidget(self.numSamplesInput)
+        Vlayout.addWidget(self.fwhmWLabel)
+        Vlayout.addWidget(self.fwhmWInput)
+        Vlayout.addWidget(self.fwhmCLabel)
+        Vlayout.addWidget(self.fwhmCInput)
+        Vlayout.addWidget(self.numSamplesLabel)
+        Vlayout.addWidget(self.numSamplesInput)
 
         # Hide by default (only show if NO selected)
         self.fwhmWLabel.hide()
@@ -65,7 +83,7 @@ class CalibrationDialog(QDialog):
         btnLayout.addWidget(self.okBtn)
         btnLayout.addWidget(self.cancelBtn)
 
-        layout.addLayout(btnLayout)
+        Vlayout.addLayout(btnLayout)
 
         # ──── Connections ─────────────────────────────────────────────────────
         self.rsrNo.toggled.connect(self.toggleFWHM)
@@ -88,5 +106,8 @@ class CalibrationDialog(QDialog):
             "use_rsr": self.rsrYes.isChecked(),
             "fwhm_width": self.fwhmWInput.text(),
             "fwhm_center": self.fwhmCInput.text(),
-            "num_samples": self.numSamplesInput.text()
+            "num_samples": self.numSamplesInput.text(),
+            "environment_temp": self.tempInput.text(),
+            "bb_start_temp": self.bbTempInput.text(),
+            "bb_temp_step": self.tempStepInput.text()
         }

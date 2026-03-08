@@ -27,7 +27,7 @@ class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         if not MainWindow.objectName():
             MainWindow.setObjectName(u"MainWindow")
-        MainWindow.resize(1200, 841)
+        MainWindow.resize(1200, 846)
         palette = QPalette()
         brush = QBrush(QColor(0, 0, 0, 255))
         brush.setStyle(Qt.BrushStyle.SolidPattern)
@@ -117,7 +117,7 @@ class Ui_MainWindow(object):
         MainWindow.setPalette(palette)
         icon = QIcon(QIcon.fromTheme(u"applications-engineering"))
         MainWindow.setWindowIcon(icon)
-        MainWindow.setWindowOpacity(0.900000000000000)
+        MainWindow.setWindowOpacity(1.000000000000000)
         self.actionOpenImage = QAction(MainWindow)
         self.actionOpenImage.setObjectName(u"actionOpenImage")
         self.actionOpenBBDirectory = QAction(MainWindow)
@@ -254,7 +254,7 @@ class Ui_MainWindow(object):
 
         self.rowTextEdit = QPlainTextEdit(self.calTab)
         self.rowTextEdit.setObjectName(u"rowTextEdit")
-        self.rowTextEdit.setMaximumSize(QSize(50, 30))
+        self.rowTextEdit.setMaximumSize(QSize(70, 35))
         self.rowTextEdit.setFont(font)
 
         self.rowLayout.addWidget(self.rowTextEdit)
@@ -277,8 +277,8 @@ class Ui_MainWindow(object):
 
         self.colTextEdit = QPlainTextEdit(self.calTab)
         self.colTextEdit.setObjectName(u"colTextEdit")
-        self.colTextEdit.setMinimumSize(QSize(50, 30))
-        self.colTextEdit.setMaximumSize(QSize(50, 30))
+        self.colTextEdit.setMinimumSize(QSize(70, 30))
+        self.colTextEdit.setMaximumSize(QSize(70, 35))
         self.colTextEdit.setFont(font)
 
         self.colLayout.addWidget(self.colTextEdit)
@@ -382,7 +382,8 @@ class Ui_MainWindow(object):
         self.texteditNEDTRow.setObjectName(u"texteditNEDTRow")
         sizePolicy.setHeightForWidth(self.texteditNEDTRow.sizePolicy().hasHeightForWidth())
         self.texteditNEDTRow.setSizePolicy(sizePolicy)
-        self.texteditNEDTRow.setMaximumSize(QSize(50, 30))
+        self.texteditNEDTRow.setMinimumSize(QSize(70, 35))
+        self.texteditNEDTRow.setMaximumSize(QSize(70, 35))
         self.texteditNEDTRow.setFont(font)
 
         self.layoutNEDTRow.addWidget(self.texteditNEDTRow)
@@ -404,7 +405,8 @@ class Ui_MainWindow(object):
         self.texteditNEDTCol.setObjectName(u"texteditNEDTCol")
         sizePolicy.setHeightForWidth(self.texteditNEDTCol.sizePolicy().hasHeightForWidth())
         self.texteditNEDTCol.setSizePolicy(sizePolicy)
-        self.texteditNEDTCol.setMaximumSize(QSize(50, 30))
+        self.texteditNEDTCol.setMinimumSize(QSize(70, 35))
+        self.texteditNEDTCol.setMaximumSize(QSize(70, 35))
         self.texteditNEDTCol.setFont(font)
 
         self.layoutNEDTCol.addWidget(self.texteditNEDTCol)
@@ -452,7 +454,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
         self.menubar = QMenuBar(MainWindow)
         self.menubar.setObjectName(u"menubar")
-        self.menubar.setGeometry(QRect(0, 0, 1200, 19))
+        self.menubar.setGeometry(QRect(0, 0, 1200, 23))
         self.menuFile = QMenu(self.menubar)
         self.menuFile.setObjectName(u"menuFile")
         self.menuWorkflow = QMenu(self.menubar)
@@ -472,7 +474,7 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
 
-        self.tabWidget.setCurrentIndex(2)
+        self.tabWidget.setCurrentIndex(1)
 
 
         QMetaObject.connectSlotsByName(MainWindow)
@@ -523,8 +525,8 @@ class Ui_MainWindow(object):
 "hr { height: 1px; border-width: 0; }\n"
 "li.unchecked::marker { content: \"\\2610\"; }\n"
 "li.checked::marker { content: \"\\2612\"; }\n"
-"</style></head><body style=\" font-family:'Sans Serif'; font-size:12pt; font-weight:400; font-style:normal;\">\n"
-"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">1</p></body></html>", None))
+"</style></head><body style=\" font-family:'Noto Sans'; font-size:12pt; font-weight:400; font-style:normal;\">\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:'Sans Serif';\">1</span></p></body></html>", None))
         self.labelNEDTCol.setText(QCoreApplication.translate("MainWindow", u"Column", None))
         self.texteditNEDTCol.setHtml(QCoreApplication.translate("MainWindow", u"<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\n"
@@ -532,8 +534,8 @@ class Ui_MainWindow(object):
 "hr { height: 1px; border-width: 0; }\n"
 "li.unchecked::marker { content: \"\\2610\"; }\n"
 "li.checked::marker { content: \"\\2612\"; }\n"
-"</style></head><body style=\" font-family:'Sans Serif'; font-size:12pt; font-weight:400; font-style:normal;\">\n"
-"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">1</p></body></html>", None))
+"</style></head><body style=\" font-family:'Noto Sans'; font-size:12pt; font-weight:400; font-style:normal;\">\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:'Sans Serif';\">1</span></p></body></html>", None))
         self.pushSaveNEDT.setText(QCoreApplication.translate("MainWindow", u"Save NEDT Plot", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.nedtTab), QCoreApplication.translate("MainWindow", u"NEDT", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.stabilityTab), QCoreApplication.translate("MainWindow", u"Stability", None))

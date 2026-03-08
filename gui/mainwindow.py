@@ -89,8 +89,10 @@ class MainWindow(QMainWindow):
         self.ui.actionOpen_Project.triggered.connect(self.LoadProject)
         self.ui.actionOpenOther.triggered.connect(self.OpenOther)
 
+
+# ───── FILE AND DIRECTORY HANDLING ──────────────────────────────────────────────────────
     def OpenOther(self):
-        # QFileDialog for opening other types of files (e.g. txts for NEdT, or other image formats)
+        # QFileDialog for opening other types of files (e.g. txts for RSR)
         filepath,_ = QFileDialog.getOpenFileName(
             self,
             "Select file path",
@@ -113,172 +115,6 @@ class MainWindow(QMainWindow):
             list_item.setText(0, os.path.basename(filepath))
             list_item.setData(0, Qt.UserRole, filepath)
 
-    def NextFrame(self):
-        max_index = len(self.list_of_valid_files)
-        if self.index < max_index:
-            self.index = self.index + 1
-            self.ui.frameSelection.setValue(self.index)
-            self.OnFrameChanged()
-              
-    def PriorFrame(self):
-
-        if self.index > 0:
-            self.index = self.index -1
-            self.ui.frameSelection.setValue(self.index)
-            self.OnFrameChanged()
-            
-    def AddDirectoryToTree(self, directory):
-        root = QTreeWidgetItem(self.filesRoot)
-        root.setText(0, os.path.basename(directory))
-        root.setData(0, Qt.UserRole, directory)
-
-        for fname in sorted(os.listdir(directory)):
-            child = QTreeWidgetItem(root)
-            child.setText(0, fname)
-            child.setData(0, Qt.UserRole, os.path.join(directory, fname))
-
-        root.setExpanded(False)
-
-    def UpdateSliderVal(self):
-        self.index = self.ui.frameSelection.value()
-        self.OnFrameChanged()
-
-    def OnPixelInputChanged(self):
-
-        tab_index = self.ui.tabWidget.currentIndex()
-        if tab_index == 1:  # Calibration tab is active
-            try:
-                row = int(self.ui.rowTextEdit.toPlainText())
-                col = int(self.ui.colTextEdit.toPlainText())
-            except ValueError:
-                return  # Silently ignore incomplete/invalid input while typing
-            if not hasattr(self, 'calibration_data') or self.calibration_data is None:
-                return
-            # Check to see which tab is active, if calibration tab is active, update the pixel stats plot with the new row and column
-            pixel_stats = prepare_pixel(self.calibration_data, row, col)
-
-            self.ui.labelGainCoeff.setText(f"{pixel_stats[7]:.4f}")
-            self.ui.labelBiasCoeff.setText(f"{pixel_stats[8]:.4f}")
-            self.ViewCalibrationInfo(pixel_stats)
-        elif tab_index == 2: # NEdT tab is active
-            if hasattr(self, 'NEdT_Data'):
-                row = int(self.ui.texteditNEDTRow.toPlainText())
-                col = int(self.ui.texteditNEDTCol.toPlainText())
-                nedt_pixel = self.NEdT_Data[row, col,:]
-                self.ViewNEDTInfo(nedt_pixel, self.temps)
-
-    def OnFrameChanged(self):
-        if 0 <= self.index < len(self.list_of_valid_files):
-            self.item_selected = self.list_of_valid_files[self.index]
-            self.ViewImage()
-
-    def OnTabChanged(self, index):
-        """Triggered when tab is switched"""
-
-        tab_text = self.ui.tabWidget.tabText(index)
-        # Act based on index or label
-        if index == 0:
-            return
-        elif index == 1:
-            self.Calibration()
-        elif index == 2:
-            self.NEdTCalc()
-        elif index == 3:
-            self.Stability()
-
-    def Calibration(self):
-        if not self.active_calibration:
-            reply = QMessageBox.question(
-                self,
-                "Calibration",
-                "Do you want to perform a calibration run?",
-                QMessageBox.Yes | QMessageBox.No
-            )
-
-            if reply == QMessageBox.No:
-                return   # User chickened out
-            print(f"Silly")
-            # Open advanced dialog
-            dlg = CalibrationDialog(self)
-
-            if os.path.isdir(self.item_selected):
-                if dlg.exec():   # User pressed Start
-                    settings = dlg.getValues()
-
-                    if settings["use_rsr"]:
-                        self.selected_rsr_path = select_rsr(self.filesRoot, self)
-                        if self.selected_rsr_path is None:
-                            return  # user cancelled or no file found
-                        self.StartCalibration(self.item_selected, self.filetype, rsr=self.selected_rsr_path)
-                    else:
-                        fwhm_width = float(settings["fwhm_width"])
-                        fwhm_center = float(settings["fwhm_center"])
-                        num_samples = int(settings["num_samples"])
-
-                        ### Generating Rect FWHM for simulated RSR ###
-                        wavelengths = np.linspace(fwhm_center-fwhm_width/2.0, fwhm_center+fwhm_width/2.0, num_samples)
-                        response = np.ones(shape=[num_samples], dtype=float)
-                        response[0] = 0.5
-                        response[response.shape[0]-1] = 0.5
-                        rsr_sim = np.array([wavelengths, response])
-
-                        self.StartCalibration(self.item_selected, self.filetype, rsr = rsr_sim)
-                else:
-                    QMessageBox.critical(
-                    self,
-                    "Error",
-                    f"The current item selected in the Project Files is not a directory.")
-                    return
-        else: 
-            QMessageBox.information(
-                self,
-                "Calibration in Progress",
-                "A calibration is already in progress. Please wait for it to finish before starting a new one."
-            )
-
-    def OpenImage(self):
-        filepath,_ = QFileDialog.getOpenFileName(
-            self,
-            "Select RSR file path",
-            "","All Files (*)"
-        )
-
-        if not filepath:
-            QMessageBox.information(
-            self,
-            "No File Selected"
-            )
-            return
-        else:
-            QMessageBox.information(
-                self,
-                "File Selected",
-                f"You selected:\n{filepath}"
-                )
-            
-        self.list_of_files.append(filepath)
-        list_item = QListWidgetItem()
-        list_item.setData(0,filepath)
-        self.ui.widgetProjectFileList.addItem(list_item)
-        self.ui.tabWidget.setTabEnabled(self.ui.tabWidget.indexOf(self.ui.imageTab), True)
-    
-    def OpenRSRText(self):
-        rsr_path,_ = QFileDialog.getOpenFileName(
-        self,
-        "Select RSR file path",
-        "","*.txt;;All Files (*)"
-        )
-
-        if not rsr_path:
-            return 
-        else:
-            QMessageBox.information(
-                self,
-                "RSR Selected",
-                f"You selected:\n{rsr_path}"
-                )
-            self.list_of_files.append(rsr_path)     
-            
     def OpenBlackbodyDirectory(self):
 
         directory = QFileDialog.getExistingDirectory(
@@ -335,6 +171,46 @@ class MainWindow(QMainWindow):
             self.index = 0
             self.OnFrameChanged()
 
+    def OpenImage(self):
+        filepath,_ = QFileDialog.getOpenFileName(
+            self,
+            "Select RSR file path",
+            "","All Files (*)"
+        )
+
+        if not filepath:
+            QMessageBox.information(
+            self,
+            "No File Selected"
+            )
+            return
+        else:
+            QMessageBox.information(
+                self,
+                "File Selected",
+                f"You selected:\n{filepath}"
+                )
+            
+        self.list_of_files.append(filepath)
+        list_item = QListWidgetItem()
+        list_item.setData(0,filepath)
+        self.ui.widgetProjectFileList.addItem(list_item)
+        self.ui.tabWidget.setTabEnabled(self.ui.tabWidget.indexOf(self.ui.imageTab), True)
+
+
+# ───── PROJECT TREE HANDLING ──────────────────────────────────────────────────────
+    def AddDirectoryToTree(self, directory):
+        root = QTreeWidgetItem(self.filesRoot)
+        root.setText(0, os.path.basename(directory))
+        root.setData(0, Qt.UserRole, directory)
+
+        for fname in sorted(os.listdir(directory)):
+            child = QTreeWidgetItem(root)
+            child.setText(0, fname)
+            child.setData(0, Qt.UserRole, os.path.join(directory, fname))
+
+        root.setExpanded(False)
+
     def OnTreeClicked(self, item, column):
         data = item.data(0, Qt.UserRole)
 
@@ -358,6 +234,7 @@ class MainWindow(QMainWindow):
             # Directory
             self.item_selected = data
 
+# ───── IMAGE DISPLAY TAB ──────────────────────────────────────────────────────
     def ViewImage(self):
         if not self.item_selected:
             return
@@ -376,9 +253,91 @@ class MainWindow(QMainWindow):
         self.ui.imagelabel.setPixmap(pixmap)
         self.ui.labelFrameCount.setText(f"Current Frame: {self.index+1} of {len(self.list_of_valid_files)}.")
 
-    def StartCalibration(self, directory, filetype, rsr=None):
+    def NextFrame(self):
+        max_index = len(self.list_of_valid_files)
+        if self.index < max_index:
+            self.index = self.index + 1
+            self.ui.frameSelection.setValue(self.index)
+            self.OnFrameChanged()
+              
+    def PriorFrame(self):
+
+        if self.index > 0:
+            self.index = self.index -1
+            self.ui.frameSelection.setValue(self.index)
+            self.OnFrameChanged()
+
+    def UpdateSliderVal(self):
+        self.index = self.ui.frameSelection.value()
+        self.OnFrameChanged()
+
+    def OnFrameChanged(self):
+        if 0 <= self.index < len(self.list_of_valid_files):
+            self.item_selected = self.list_of_valid_files[self.index]
+            self.ViewImage()
+
+
+# ───── CALIBRATION DISPLAY TAB ──────────────────────────────────────────────────────
+    def Calibration(self):
+        if not self.active_calibration:
+            reply = QMessageBox.question(
+                self,
+                "Calibration",
+                "Do you want to perform a calibration run?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+
+            if reply == QMessageBox.No:
+                return   # User chickened out
+            # Open advanced dialog
+            dlg = CalibrationDialog(self)
+
+            if os.path.isdir(self.item_selected):
+                if dlg.exec():   # User pressed Start
+                    settings = dlg.getValues()
+
+                    # environment_temp = float(settings["environment_temp"])
+                    bb_start_temp = float(settings["bb_start_temp"])
+                    bb_temp_step = float(settings["bb_temp_step"])
+
+                    self.bb_start_temp = bb_start_temp
+                    self.bb_temp_step = bb_temp_step
+
+                    if settings["use_rsr"]:
+                        self.selected_rsr_path = select_rsr(self.filesRoot, self)
+                        if self.selected_rsr_path is None:
+                            return  # user cancelled or no file found
+                        self.StartCalibration(self.item_selected, self.filetype, rsr=self.selected_rsr_path, bb_start_temp=bb_start_temp, bb_temp_step=bb_temp_step)
+                    else:
+                        fwhm_width = float(settings["fwhm_width"])
+                        fwhm_center = float(settings["fwhm_center"])
+                        num_samples = int(settings["num_samples"])
+                        
+
+                        ### Generating Rect FWHM for simulated RSR ###
+                        wavelengths = np.linspace(fwhm_center-fwhm_width/2.0, fwhm_center+fwhm_width/2.0, num_samples)
+                        response = np.ones(shape=[num_samples], dtype=float)
+                        response[0] = 0.5
+                        response[response.shape[0]-1] = 0.5
+                        rsr_sim = np.array([wavelengths, response])
+
+                        self.StartCalibration(self.item_selected, self.filetype, rsr = rsr_sim, bb_start_temp=bb_start_temp, bb_temp_step=bb_temp_step)
+                else:
+                    QMessageBox.critical(
+                    self,
+                    "Error",
+                    f"The current item selected in the Project Files is not a directory.")
+                    return
+        else: 
+            QMessageBox.information(
+                self,
+                "Calibration in Progress",
+                "A calibration is already in progress. Please wait for it to finish before starting a new one."
+            )
+
+    def StartCalibration(self, directory, filetype, rsr=None, bb_start_temp=None, bb_temp_step=None):
         self.thread = QThread()
-        self.worker = CalibrationWorker(directory, filetype, rsr)
+        self.worker = CalibrationWorker(directory, filetype, rsr, bb_start_temp, bb_temp_step)
 
         self.worker.moveToThread(self.thread)
 
@@ -400,18 +359,6 @@ class MainWindow(QMainWindow):
         self.thread.start()
 
         self.active_calibration = True
-
-    def UpdateProgress(self, phase, current, total):
-        percent = int((current / total) * 100)
-
-        if phase == "loading":
-            self.ui.progressbarCal.setFormat("Loading images... %p%")
-        elif phase == "calibrating":
-            self.ui.progressbarCal.setFormat("Calibrating pixels... %p%")
-        elif phase == "ascension":
-            self.ui.progressbarCal.setFormat("Calculating ascension regions... %p%")
-
-        self.ui.progressbarCal.setValue(percent)
 
     def CalibrationFinished(self, cal_array):
         self.ui.progressbarCal.setValue(100)
@@ -517,6 +464,109 @@ class MainWindow(QMainWindow):
         self.calCanvas.figure.tight_layout()
         self.calCanvas.draw()
 
+# ───── NEDT CALCULATION AND DISPLAY TAB ──────────────────────────────────────────────────────
+    def NEdTCalc(self):
+        if not self.selected_rsr_path:
+            self.selected_rsr_path = select_rsr(self.filesRoot, self)
+        if not self.selected_rsr_path:
+            return
+
+        print(f"Using RSR file for NEdT calculation: {self.selected_rsr_path}")
+        txt_content = np.loadtxt(self.selected_rsr_path, skiprows=1, delimiter=',')
+        wavelengths = txt_content[:, 0]
+        response = txt_content[:, 1]
+
+        self.temps = self.bb_start_temp + self.bb_temp_step * np.arange(self.calibration_data.number_of_steps)
+        self.NEdT_Data = lit.NEDT.NEdT_calculation(self.calibration_data.image_stack, self.calibration_data.coefficients, self.temps, wavelengths, response)
+        
+        # Image-wide percentiles across all pixels at each temperature step
+        self.median_NEDT  = np.percentile(self.NEdT_Data, 50,  axis=(0,1))  # same as median
+        
+
+        self.ViewNEDTInfo(self.NEdT_Data[0,0,:], self.temps)
+
+    def ViewNEDTInfo(self, nedt_pixel, temps, row=1, col=1):
+        axs = self.nedtCanvas.get_single_grid()
+
+        # Image-wide std band around median
+        std_NEDT = np.std(self.NEdT_Data, axis=(0,1))
+        upper = self.median_NEDT + std_NEDT
+        lower = self.median_NEDT - std_NEDT
+
+        axs.fill_between(temps, lower, upper, alpha=0.20, color='gray', label='Image median ± 1s')
+        axs.plot(temps, self.median_NEDT, c='gray', label='Image NEdT50', linewidth=2, marker='o', markersize=4)
+
+        # Selected pixel
+        axs.plot(temps, nedt_pixel, c='blue', label=f'Pixel ({row},{col}) NEdT68', linewidth=2, marker='o', markersize=4)
+
+        axs.legend()
+        axs.set_title(f"NEdT Confidence Intervals at Pixel ({row},{col})")
+        axs.set_xlabel("Temperature Step [K]")
+        axs.set_ylabel("NEdT [K]")
+        axs.grid(True, linestyle='--', alpha=0.4)
+        self.nedtCanvas.figure.tight_layout()
+        self.nedtCanvas.draw()
+
+# ───── HELPER FUNCTIONS ───────────────────────────────────────────────────────
+    def UpdateProgress(self, phase, current, total):
+        percent = int((current / total) * 100)
+
+        if phase == "loading":
+            self.ui.progressbarCal.setFormat("Loading images... %p%")
+        elif phase == "calibrating":
+            self.ui.progressbarCal.setFormat("Calibrating pixels... %p%")
+        elif phase == "ascension":
+            self.ui.progressbarCal.setFormat("Calculating ascension regions... %p%")
+
+        self.ui.progressbarCal.setValue(percent)
+
+    def OnPixelInputChanged(self):
+        tab_index = self.ui.tabWidget.currentIndex()
+        if tab_index == 1:  # Calibration tab is active
+            if hasattr(self, 'calibration_data') and self.calibration_data is not None:
+                try:
+                    row = int(self.ui.rowTextEdit.toPlainText())
+                    col = int(self.ui.colTextEdit.toPlainText())
+                except ValueError:
+                    return  # Invalid input, ignore the change
+                row = self.calibration_data.coefficients.shape[0] - 1 if row >= self.calibration_data.coefficients.shape[0] else row
+                col = self.calibration_data.coefficients.shape[1] - 1 if col >= self.calibration_data.coefficients.shape[1] else col
+                row = 0 if row < 0 else row
+                col = 0 if col < 0 else col
+                pixel_stats = prepare_pixel(self.calibration_data, row, col)
+                self.ui.labelGainCoeff.setText(f"{pixel_stats[7]:.4f}")
+                self.ui.labelBiasCoeff.setText(f"{pixel_stats[8]:.4f}")
+                self.ViewCalibrationInfo(pixel_stats)
+
+        elif tab_index == 2: # NEdT tab is active
+            if hasattr(self, 'NEdT_Data') and self.NEdT_Data is not None:
+                try:
+                    row = int(self.ui.texteditNEDTRow.toPlainText())
+                    col = int(self.ui.texteditNEDTCol.toPlainText())
+                except ValueError:
+                    return  # Invalid input, ignore the change
+                row = self.NEdT_Data.shape[0] - 1 if row >= self.NEdT_Data.shape[0] else row
+                col = self.NEdT_Data.shape[1] - 1 if col >= self.NEdT_Data.shape[1] else col
+                row = 0 if row < 0 else row
+                col = 0 if col < 0 else col
+                nedt_pixel = self.NEdT_Data[row, col,:]
+                self.ViewNEDTInfo(nedt_pixel, self.temps, row=row, col=col)
+
+    def OnTabChanged(self, index):
+        """Triggered when tab is switched"""
+
+        tab_text = self.ui.tabWidget.tabText(index)
+        # Act based on index or label
+        if index == 0:
+            return
+        elif index == 1:
+            self.Calibration()
+        elif index == 2:
+            self.NEdTCalc()
+        elif index == 3:
+            self.Stability()
+
+# ───── PROJECT VARIABLES AND DATA HANDLING ──────────────────────────────────────────────────────
     def SaveImage(self):
         # Add to Variables section
         var_item = QTreeWidgetItem(self.varsRoot)
@@ -525,40 +575,8 @@ class MainWindow(QMainWindow):
         # Store the ACTUAL image object
         var_item.setData(0, Qt.UserRole, self.current_image)
 
-    def NEdTCalc(self):
 
-        if not self.selected_rsr_path:
-            self.selected_rsr_path = select_rsr(self.filesRoot, self)
-        if not self.selected_rsr_path:
-            return  # still None, bail out gracefully
-        
-        print(f"Using RSR file for NEdT calculation: {self.selected_rsr_path}")
-
-        # Parse the RSR file to get wavelength and response arrays
-        txt_content = np.loadtxt(self.selected_rsr_path, skiprows=1, delimiter=',')
-        wavelengths = txt_content[:, 0]
-        response = txt_content[:, 1]
-        
-        self.temps = [
-        283.15, 288.15, 293.15, 298.15, 303.15, 308.15, 313.15, 318.15, 323.15,
-        328.15, 333.15, 338.15, 343.15
-        ]
-
-        self.NEdT_Data = lit.NEDT.NEdT_calculation(self.calibration_data.image_stack, self.calibration_data.coefficients, self.temps, wavelengths, response)
-
-        self.ViewNEDTInfo(self.NEdT_Data[0,0,:], self.temps)  # View the NEdT plot for the first pixel by default
-
-    def ViewNEDTInfo(self, nedt_pixel, temps):
-        axs = self.calCanvas.get_single_grid()
-
-        axs.scatter(temps, nedt_pixel)
-        axs.set_title(f"NEdT over time at pixel location ({self.ui.texteditNEDTRow.toPlainText()},{self.ui.texteditNEDTCol.toPlainText()})")
-        axs.set_xlabel("Temperature Step [K]")
-        axs.set_ylabel("NEdT [K]")
-
-        self.calCanvas.figure.tight_layout()
-        self.calCanvas.draw()
-
+# ───── STABILITY ANALYSIS TAB ──────────────────────────────────────────────────────
     def Stability(self):
         if not self.active_stability:
             reply = QMessageBox.question(
@@ -652,6 +670,7 @@ class MainWindow(QMainWindow):
         self.ui.progressbarStability.setFormat("Error")
         QMessageBox.critical(self, "Stability Error", f"An error occurred:\n{message}")
 
+# ───── PROJECT SAVE AND LOAD FUNCTIONALITY ──────────────────────────────────────────────────────
     def SaveProject(self):
         folder_path = QFileDialog.getExistingDirectory(
             self,
