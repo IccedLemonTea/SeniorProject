@@ -12,7 +12,7 @@
 #   [2] Config scalars (directory, BB temp, step, deriv/window params) now read
 #       directly from BlackbodyCalibration instance attrs (Option A — stored on
 #       self at end of __init__) rather than inferred from GUI state
-#   [3] current_image_path now saves mw.current_dir_files[mw.index] (a concrete
+#   [3] current_image_path now saves mw.list_of_valid_files[mw.index] (a concrete
 #       file) rather than mw.item_selected which may be a directory — this was
 #       the cause of the "expected str, bytes or os.PathLike, not NoneType" crash
 
@@ -52,7 +52,7 @@ def save_project(main_window, folder_path: str) -> None:
         "list_of_files":     getattr(mw, "list_of_files",     []),
         "item_selected":     getattr(mw, "item_selected",     ""),
         "current_index":     getattr(mw, "index",             None),
-        "current_dir_files": getattr(mw, "current_dir_files", []),
+        "list_of_valid_files": getattr(mw, "list_of_valid_files", []),
     }
 
     # ── 2. Calibration data ───────────────────────────────────────────────────
@@ -105,16 +105,16 @@ def save_project(main_window, folder_path: str) -> None:
         manifest["stability"]["has_stability_data"] = False
 
     # ── 4. Current image path ─────────────────────────────────────────────────
-    # FIX [3]: item_selected may be a directory. Use current_dir_files[index]
+    # FIX [3]: item_selected may be a directory. Use list_of_valid_files[index]
     # to get a concrete file path for ImageDataFactory on load.
     current_file_path = ""
-    current_dir_files = getattr(mw, "current_dir_files", [])
+    list_of_valid_files = getattr(mw, "list_of_valid_files", [])
     index             = getattr(mw, "index", None)
     item_selected     = getattr(mw, "item_selected", "")
 
-    if (current_dir_files and index is not None
-            and 0 <= index < len(current_dir_files)):
-        candidate = current_dir_files[index]
+    if (list_of_valid_files and index is not None
+            and 0 <= index < len(list_of_valid_files)):
+        candidate = list_of_valid_files[index]
         if os.path.isfile(candidate):
             current_file_path = candidate
 
@@ -212,7 +212,7 @@ def load_project(main_window, folder_path: str) -> None:
         mw.list_of_files     = files.get("list_of_files",     [])
         mw.item_selected     = files.get("item_selected",     "")
         mw.index             = files.get("current_index",     0)
-        mw.current_dir_files = files.get("current_dir_files", [])
+        mw.list_of_valid_files = files.get("list_of_valid_files", [])
 
         mw.filesRoot.takeChildren()
         added_dirs = set()
@@ -224,7 +224,7 @@ def load_project(main_window, folder_path: str) -> None:
 
         print(f"[ProjectSerializer]   item_selected : {mw.item_selected}")
         print(f"[ProjectSerializer]   current_index : {mw.index}")
-        print(f"[ProjectSerializer]   dir_files     : {len(mw.current_dir_files)} entries")
+        print(f"[ProjectSerializer]   dir_files     : {len(mw.list_of_valid_files)} entries")
     except Exception:
         print("[ProjectSerializer] ERROR restoring file lists:")
         traceback.print_exc()
@@ -279,10 +279,13 @@ def load_project(main_window, folder_path: str) -> None:
         if img_path and os.path.isfile(img_path):
             factory          = lit.ImageDataFactory()
             config           = lit.ImageDataConfig(filename=img_path, fileformat="rjpeg")
-            mw.current_image = factory.create_from_file(config)
-            qimg             = prepare_for_qt(mw.current_image.raw_counts)
-            mw.ui.imagelabel.setPixmap(QPixmap.fromImage(qimg))
-            print(f"[ProjectSerializer]   Loaded: {img_path}")
+            if factory.is_valid_image_file(img_path, "rjpeg"):
+                mw.current_image = factory.create_from_file(config)
+                qimg             = prepare_for_qt(mw.current_image.raw_counts)
+                mw.ui.imagelabel.setPixmap(QPixmap.fromImage(qimg))
+                print(f"[ProjectSerializer]   Loaded: {img_path}")
+            else:
+                print(f"[ProjectSerializer]   Invalid image file, skipping: {img_path}")
         elif img_path:
             print(f"[ProjectSerializer]   File not found on disk, skipping: {img_path}")
         else:
