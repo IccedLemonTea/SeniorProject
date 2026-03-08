@@ -355,8 +355,8 @@ class Ui_MainWindow(object):
         self.widgetNEDTPlot = QWidget(self.nedtTab)
         self.widgetNEDTPlot.setObjectName(u"widgetNEDTPlot")
         self.widgetNEDTPlot.setMinimumSize(QSize(700, 500))
-        self.verticalLayout_4 = QVBoxLayout(self.widgetNEDTPlot)
-        self.verticalLayout_4.setObjectName(u"verticalLayout_4")
+        self.layoutNEDTPlot = QVBoxLayout(self.widgetNEDTPlot)
+        self.layoutNEDTPlot.setObjectName(u"layoutNEDTPlot")
 
         self.verticalLayout_5.addWidget(self.widgetNEDTPlot)
 
@@ -383,6 +383,7 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.texteditNEDTRow.sizePolicy().hasHeightForWidth())
         self.texteditNEDTRow.setSizePolicy(sizePolicy)
         self.texteditNEDTRow.setMaximumSize(QSize(50, 30))
+        self.texteditNEDTRow.setFont(font)
 
         self.layoutNEDTRow.addWidget(self.texteditNEDTRow)
 
@@ -403,7 +404,8 @@ class Ui_MainWindow(object):
         self.texteditNEDTCol.setObjectName(u"texteditNEDTCol")
         sizePolicy.setHeightForWidth(self.texteditNEDTCol.sizePolicy().hasHeightForWidth())
         self.texteditNEDTCol.setSizePolicy(sizePolicy)
-        self.texteditNEDTCol.setMaximumSize(QSize(50, 40))
+        self.texteditNEDTCol.setMaximumSize(QSize(50, 30))
+        self.texteditNEDTCol.setFont(font)
 
         self.layoutNEDTCol.addWidget(self.texteditNEDTCol)
 
@@ -515,7 +517,23 @@ class Ui_MainWindow(object):
         self.pushSaveCal.setText(QCoreApplication.translate("MainWindow", u"Save Plot", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.calTab), QCoreApplication.translate("MainWindow", u"Calibrate", None))
         self.labelNEDTRow.setText(QCoreApplication.translate("MainWindow", u"Row", None))
+        self.texteditNEDTRow.setHtml(QCoreApplication.translate("MainWindow", u"<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+"<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\n"
+"p, li { white-space: pre-wrap; }\n"
+"hr { height: 1px; border-width: 0; }\n"
+"li.unchecked::marker { content: \"\\2610\"; }\n"
+"li.checked::marker { content: \"\\2612\"; }\n"
+"</style></head><body style=\" font-family:'Sans Serif'; font-size:12pt; font-weight:400; font-style:normal;\">\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">1</p></body></html>", None))
         self.labelNEDTCol.setText(QCoreApplication.translate("MainWindow", u"Column", None))
+        self.texteditNEDTCol.setHtml(QCoreApplication.translate("MainWindow", u"<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
+"<html><head><meta name=\"qrichtext\" content=\"1\" /><meta charset=\"utf-8\" /><style type=\"text/css\">\n"
+"p, li { white-space: pre-wrap; }\n"
+"hr { height: 1px; border-width: 0; }\n"
+"li.unchecked::marker { content: \"\\2610\"; }\n"
+"li.checked::marker { content: \"\\2612\"; }\n"
+"</style></head><body style=\" font-family:'Sans Serif'; font-size:12pt; font-weight:400; font-style:normal;\">\n"
+"<p style=\" margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\">1</p></body></html>", None))
         self.pushSaveNEDT.setText(QCoreApplication.translate("MainWindow", u"Save NEDT Plot", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.nedtTab), QCoreApplication.translate("MainWindow", u"NEDT", None))
         self.tabWidget.setTabText(self.tabWidget.indexOf(self.stabilityTab), QCoreApplication.translate("MainWindow", u"Stability", None))

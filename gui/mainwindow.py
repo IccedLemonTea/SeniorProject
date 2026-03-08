@@ -12,8 +12,9 @@ from core.image_display import prepare_for_qt
 from core.plot_canvas import MplCanvas
 from core.pixel_stats import prepare_pixel
 from core.calibration_dialog import CalibrationDialog
-import numpy as np
 from core.project_serializer import save_project, load_project
+from core.select_RSR import select_rsr
+import numpy as np
 
 
 # Important:
@@ -48,6 +49,9 @@ class MainWindow(QMainWindow):
         self.current_image = None
         self.active_calibration = False
         self.index = None
+        self.active_stability = False
+        self.list_of_valid_files = [] 
+        self.selected_rsr_path = None
 
         # ---- Matplotlib canvas inside calibration tab ----
         self.calCanvas = MplCanvas(self.ui.calibrationPlotContainer)
@@ -55,6 +59,9 @@ class MainWindow(QMainWindow):
 
         self.stabilityCanvas = MplCanvas(self.ui.stabilityPlotContainer)
         self.ui.stabilityPlotLayout.addWidget(self.stabilityCanvas)
+
+        self.nedtCanvas = MplCanvas(self.ui.widgetNEDTPlot)
+        self.ui.layoutNEDTPlot.addWidget(self.nedtCanvas)
 
         # Necessary for ease of access, limits the amount of text in the file list
         self.home_dir = os.path.expanduser("~")
@@ -76,6 +83,8 @@ class MainWindow(QMainWindow):
         self.ui.priorFrame.clicked.connect(self.PriorFrame)
         self.ui.rowTextEdit.textChanged.connect(self.OnPixelInputChanged)
         self.ui.colTextEdit.textChanged.connect(self.OnPixelInputChanged)
+        self.ui.texteditNEDTCol.textChanged.connect(self.OnPixelInputChanged)
+        self.ui.texteditNEDTRow.textChanged.connect(self.OnPixelInputChanged)
         self.ui.actionSave_Project.triggered.connect(self.SaveProject)
         self.ui.actionOpen_Project.triggered.connect(self.LoadProject)
         self.ui.actionOpenOther.triggered.connect(self.OpenOther)
@@ -105,7 +114,7 @@ class MainWindow(QMainWindow):
             list_item.setData(0, Qt.UserRole, filepath)
 
     def NextFrame(self):
-        max_index = len(self.current_dir_files)
+        max_index = len(self.list_of_valid_files)
         if self.index < max_index:
             self.index = self.index + 1
             self.ui.frameSelection.setValue(self.index)
@@ -155,12 +164,12 @@ class MainWindow(QMainWindow):
             if hasattr(self, 'NEdT_Data'):
                 row = int(self.ui.texteditNEDTRow.toPlainText())
                 col = int(self.ui.texteditNEDTCol.toPlainText())
-                nedt_pixel = self.NEdT_Data[row, col]
-                self.ViewNEDTInfo(nedt_pixel)
+                nedt_pixel = self.NEdT_Data[row, col,:]
+                self.ViewNEDTInfo(nedt_pixel, self.temps)
 
     def OnFrameChanged(self):
-        if 0 <= self.index < len(self.current_dir_files):
-            self.item_selected = self.current_dir_files[self.index]
+        if 0 <= self.index < len(self.list_of_valid_files):
+            self.item_selected = self.list_of_valid_files[self.index]
             self.ViewImage()
 
     def OnTabChanged(self, index):
@@ -188,8 +197,8 @@ class MainWindow(QMainWindow):
 
             if reply == QMessageBox.No:
                 return   # User chickened out
-
-            # Open advanced dialog 
+            print(f"Silly")
+            # Open advanced dialog
             dlg = CalibrationDialog(self)
 
             if os.path.isdir(self.item_selected):
@@ -197,7 +206,10 @@ class MainWindow(QMainWindow):
                     settings = dlg.getValues()
 
                     if settings["use_rsr"]:
-                        self.StartCalibration(self.item_selected, "rjpeg")
+                        self.selected_rsr_path = select_rsr(self.filesRoot, self)
+                        if self.selected_rsr_path is None:
+                            return  # user cancelled or no file found
+                        self.StartCalibration(self.item_selected, self.filetype, rsr=self.selected_rsr_path)
                     else:
                         fwhm_width = float(settings["fwhm_width"])
                         fwhm_center = float(settings["fwhm_center"])
@@ -210,20 +222,20 @@ class MainWindow(QMainWindow):
                         response[response.shape[0]-1] = 0.5
                         rsr_sim = np.array([wavelengths, response])
 
-                        self.StartCalibration(self.item_selected, "rjpeg", rsr = rsr_sim)
-            else:
-                QMessageBox.critical(
-                self,
-                "Error",
-                f"The current item selected in the Project Files is not a directory.")
-                return
+                        self.StartCalibration(self.item_selected, self.filetype, rsr = rsr_sim)
+                else:
+                    QMessageBox.critical(
+                    self,
+                    "Error",
+                    f"The current item selected in the Project Files is not a directory.")
+                    return
         else: 
             QMessageBox.information(
                 self,
                 "Calibration in Progress",
                 "A calibration is already in progress. Please wait for it to finish before starting a new one."
             )
-    
+
     def OpenImage(self):
         filepath,_ = QFileDialog.getOpenFileName(
             self,
@@ -298,15 +310,24 @@ class MainWindow(QMainWindow):
             self.ui.tabWidget.setTabEnabled(self.ui.tabWidget.indexOf(self.ui.imageTab), True)
 
             # Validating image files so the slider can load them in.
-            self.current_dir_files = sorted([
+            current_dir_files = sorted([
             os.path.join(directory, f)
             for f in os.listdir(directory)
             ])
+            # Look at files in directory, anything after period is the filetype # 
+
+            self.filetype = os.path.splitext(current_dir_files[0])[1][1:].lower()  # get file extension without dot, in lowercase
+
+            
+            if self.filetype == "jpg":
+                self.filetype = "rjpeg"  # treat as rjpeg if jpg FIX THIS LATER
+
+                
             Factory = lit.ImageDataFactory()
-            list_of_valid_files = [f for f in self.current_dir_files if Factory.is_valid_image_file(f, "rjpeg")]
+            self.list_of_valid_files = [f for f in current_dir_files if Factory.is_valid_image_file(f, self.filetype)]
 
             # Setting bounds for QSlider
-            num_files = len(list_of_valid_files)
+            num_files = len(self.list_of_valid_files)
             self.ui.frameSelection.setMinimum(0)
             self.ui.frameSelection.setMaximum(max(0, num_files - 1))
 
@@ -320,9 +341,9 @@ class MainWindow(QMainWindow):
         if isinstance(data, str) and os.path.isfile(data):
             # disk file
 
-            # Find index of file in current_dir_files
+            # Find index of file in list_of_valid_files
             try:
-                self.index = self.current_dir_files.index(data)
+                self.index = self.list_of_valid_files.index(data)
                 self.OnFrameChanged()
             except ValueError:
                 self.index = 0
@@ -344,7 +365,7 @@ class MainWindow(QMainWindow):
         Factory = lit.ImageDataFactory()
         config = lit.ImageDataConfig(
             filename=self.item_selected,
-            fileformat="rjpeg"
+            fileformat=self.filetype
         )
 
         self.current_image = Factory.create_from_file(config)
@@ -353,7 +374,7 @@ class MainWindow(QMainWindow):
         pixmap = QPixmap.fromImage(qimg)
 
         self.ui.imagelabel.setPixmap(pixmap)
-        self.ui.labelFrameCount.setText(f"Current Frame: {self.index+1} of {len(self.current_dir_files)}.")
+        self.ui.labelFrameCount.setText(f"Current Frame: {self.index+1} of {len(self.list_of_valid_files)}.")
 
     def StartCalibration(self, directory, filetype, rsr=None):
         self.thread = QThread()
@@ -505,84 +526,64 @@ class MainWindow(QMainWindow):
         var_item.setData(0, Qt.UserRole, self.current_image)
 
     def NEdTCalc(self):
-        # Prompt the user to select a text file containing RSR data within it.
-        # The prompt should use only text files from the QTreeWidget that are not directories and have been loaded into the project.
-        rsr_files = []
-        for i in range(self.filesRoot.childCount()):
-            child = self.filesRoot.child(i)
-            data = child.data(0, Qt.UserRole)
-            if isinstance(data, str) and os.path.isfile(data) and data.endswith('.txt'):
-                rsr_files.append((child.text(0), data))
-        if not rsr_files:
-            QMessageBox.critical(
-                self,
-                "No RSR Files",
-                "No text files were found in the Project Files. Please load an RSR text file into the project to perform NEdT calculation."
-            )
-            return
-        # if there are more than one, prompt the user to select which one to use
-        elif len(rsr_files) > 1:
-            items = [name for name, path in rsr_files]
-            item, ok = QInputDialog.getItem(
-                self,
-                "Select RSR File",
-                "Multiple text files found. Please select the RSR file to use for NEdT calculation:",
-                items,
-                0,
-                False
-            )
-            if not ok:
-                return
-            selected_path = next(path for name, path in rsr_files if name == item)
-            QMessageBox.information(
-                self,
-                "RSR File Selected",
-                f"You selected:\n{item}"
-            )
-        else:
-            selected_path = rsr_files[0][1]
-            QMessageBox.information(
-                self,
-                "RSR File Selected",
-                f"Using RSR file:\n{rsr_files[0][0]}"
-            )   
+
+        if not self.selected_rsr_path:
+            self.selected_rsr_path = select_rsr(self.filesRoot, self)
+        if not self.selected_rsr_path:
+            return  # still None, bail out gracefully
         
-        print(f"Using RSR file for NEdT calculation: {rsr_files[0][0]}")
+        print(f"Using RSR file for NEdT calculation: {self.selected_rsr_path}")
 
         # Parse the RSR file to get wavelength and response arrays
-        txt_content = np.loadtxt(selected_path, skiprows=1, delimiter=',')
+        txt_content = np.loadtxt(self.selected_rsr_path, skiprows=1, delimiter=',')
         wavelengths = txt_content[:, 0]
         response = txt_content[:, 1]
         
-        temps = [
+        self.temps = [
         283.15, 288.15, 293.15, 298.15, 303.15, 308.15, 313.15, 318.15, 323.15,
         328.15, 333.15, 338.15, 343.15
         ]
 
-        self.NEdT_Data = lit.NEDT.NEdT_calculation(self.calibration_data.image_stack, self.calibration_data.coefficients, temps, wavelengths, response)
+        self.NEdT_Data = lit.NEDT.NEdT_calculation(self.calibration_data.image_stack, self.calibration_data.coefficients, self.temps, wavelengths, response)
 
-        print(self.NEdT_Data.shape)
+        self.ViewNEDTInfo(self.NEdT_Data[0,0,:], self.temps)  # View the NEdT plot for the first pixel by default
 
-    def ViewNEDTInfo(self, nedt_pixel):
+    def ViewNEDTInfo(self, nedt_pixel, temps):
         axs = self.calCanvas.get_single_grid()
 
-        axs.plot(nedt_pixel)
+        axs.scatter(temps, nedt_pixel)
         axs.set_title(f"NEdT over time at pixel location ({self.ui.texteditNEDTRow.toPlainText()},{self.ui.texteditNEDTCol.toPlainText()})")
-        axs.set_xlabel("Frame number")
+        axs.set_xlabel("Temperature Step [K]")
         axs.set_ylabel("NEdT [K]")
 
         self.calCanvas.figure.tight_layout()
         self.calCanvas.draw()
 
     def Stability(self):
-        if isinstance(self.item_selected, str) and os.path.isdir(self.item_selected):
-            self.StartStability(self.item_selected)
+        if not self.active_stability:
+            reply = QMessageBox.question(
+                self,
+                "Stability Analysis",
+                "Do you want to perform a stability analysis?",
+                QMessageBox.Yes | QMessageBox.No
+            )
+
+            if reply == QMessageBox.No:
+                return   # User chickened out
+            if isinstance(self.item_selected, str) and os.path.isdir(self.item_selected):
+                self.StartStability(self.item_selected)
+        else:
+            QMessageBox.information(
+                self,
+                "Stability Analysis in Progress",
+                "A stability analysis is already in progress. Please wait for it to finish before starting a new one."
+            )
 
     def StartStability(self, directory):
         from core.Workers import StabilityWorker  # already imported at top if you prefer
 
         self.stability_thread = QThread()
-        self.stability_worker = StabilityWorker(directory, filetype="rjpeg")
+        self.stability_worker = StabilityWorker(directory, filetype= self.filetype)
 
         self.stability_worker.moveToThread(self.stability_thread)
 
