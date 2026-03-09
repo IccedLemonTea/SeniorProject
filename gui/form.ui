@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1200</width>
+    <width>1438</width>
     <height>846</height>
    </rect>
   </property>
@@ -521,8 +521,8 @@
    </property>
    <property name="maximumSize">
     <size>
-     <width>1200</width>
-     <height>800</height>
+     <width>64000</width>
+     <height>64000</height>
     </size>
    </property>
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -537,6 +537,12 @@
          <widget class="QLabel" name="labelProjectFiles">
           <property name="enabled">
            <bool>true</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
           </property>
           <property name="font">
            <font>
@@ -553,6 +559,18 @@
         </item>
         <item>
          <widget class="QTreeWidget" name="widgetProjectTreeList">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>250</width>
+            <height>1000</height>
+           </size>
+          </property>
           <column>
            <property name="text">
             <string>Current Project</string>
@@ -590,6 +608,12 @@
          <property name="enabled">
           <bool>true</bool>
          </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <attribute name="title">
           <string>Image Preview</string>
          </attribute>
@@ -601,7 +625,7 @@
               <property name="minimumSize">
                <size>
                 <width>720</width>
-                <height>480</height>
+                <height>600</height>
                </size>
               </property>
               <property name="text">
@@ -680,6 +704,12 @@
         <widget class="QWidget" name="calTab">
          <property name="enabled">
           <bool>true</bool>
+         </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
          </property>
          <attribute name="title">
           <string>Calibrate</string>
@@ -912,6 +942,12 @@
          <property name="enabled">
           <bool>true</bool>
          </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <attribute name="title">
           <string>NEDT</string>
          </attribute>
@@ -1082,6 +1118,12 @@ li.checked::marker { content: &quot;\2612&quot;; }
          <property name="enabled">
           <bool>true</bool>
          </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <attribute name="title">
           <string>Stability</string>
          </attribute>
@@ -1112,7 +1154,7 @@ li.checked::marker { content: &quot;\2612&quot;; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1200</width>
+     <width>1438</width>
      <height>23</height>
     </rect>
    </property>

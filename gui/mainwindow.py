@@ -52,6 +52,7 @@ class MainWindow(QMainWindow):
         self.active_stability = False
         self.list_of_valid_files = [] 
         self.selected_rsr_path = None
+        self.active_NEdT = None
 
         # ---- Matplotlib canvas inside calibration tab ----
         self.calCanvas = MplCanvas(self.ui.calibrationPlotContainer)
@@ -88,6 +89,7 @@ class MainWindow(QMainWindow):
         self.ui.actionSave_Project.triggered.connect(self.SaveProject)
         self.ui.actionOpen_Project.triggered.connect(self.LoadProject)
         self.ui.actionOpenOther.triggered.connect(self.OpenOther)
+        self.ui.pushSaveCal.clicked.connect(self.SaveCalPlot)
 
 
 # ───── FILE AND DIRECTORY HANDLING ──────────────────────────────────────────────────────
@@ -197,7 +199,6 @@ class MainWindow(QMainWindow):
         self.ui.widgetProjectFileList.addItem(list_item)
         self.ui.tabWidget.setTabEnabled(self.ui.tabWidget.indexOf(self.ui.imageTab), True)
 
-
 # ───── PROJECT TREE HANDLING ──────────────────────────────────────────────────────
     def AddDirectoryToTree(self, directory):
         root = QTreeWidgetItem(self.filesRoot)
@@ -275,7 +276,6 @@ class MainWindow(QMainWindow):
         if 0 <= self.index < len(self.list_of_valid_files):
             self.item_selected = self.list_of_valid_files[self.index]
             self.ViewImage()
-
 
 # ───── CALIBRATION DISPLAY TAB ──────────────────────────────────────────────────────
     def Calibration(self):
@@ -404,50 +404,35 @@ class MainWindow(QMainWindow):
         chunk_size = pixel_stats[11]
 
         # ---- 1 ----
-        axs[0,0].plot(individual_pixel)
-        axs[0,0].set_title(f"")
-        axs[0,0].set_xlabel("Frame number")
-        axs[0,0].set_ylabel("Digital Count")
-
-        # ---- 3 ----
-        axs[1,0].plot(first_derivative)
-        # axs[1,0].set_title("First derivative of Pixel")
-        axs[1,0].set_xlabel("Frame number")
-        axs[1,0].set_ylabel("Digital Count/Frame")
-
-        # ---- 4 ----
-        axs[1,1].plot(second_derivative)
-        # axs[1,1].set_title("Second derivative of Pixel")
-        axs[1,1].set_xlabel("Frame number")
-        axs[1,1].set_ylabel("Digital Count/Frame^2")
-
-        # ---- 5 ----
-        axs[0,2].scatter(
+        axs[0].scatter(
             range(len(individual_pixel)),
             individual_pixel,
             c='blue', s=2, marker='o',
             label='collected data'
         )
-        axs[0,2].scatter(
+        axs[0].scatter(
             average_x_vals,
             step_averages,
             c='red', s=30, marker='o',
             label='averages'
         )
-        # axs[0,2].set_title("Averaged step levels over raw data")
-        axs[0,2].legend()
-        axs[0,2].set_xlabel("Frame number")
-        axs[0,2].set_ylabel("Digital Count")
+        for step in range(self.calibration_data._number_of_steps):
+            start = int(self.calibration_data._array_of_avg_coords[2 * step])
+            end   = int(self.calibration_data._array_of_avg_coords[2 * step + 1])
+            axs[0].axvspan(start, end, alpha=0.15, color='gray')
+        axs[0].legend()
+        axs[0].set_xlabel("Frame number")
+        axs[0].set_ylabel("Digital Count")
 
         # ---- 6 ----
-        axs[1,2].scatter(
+        axs[1].scatter(
             step_averages,
             band_radiances,
             c='blue',
             label='Averaged Data'
         )
 
-        axs[1,2].plot(
+        axs[1].plot(
             step_averages,
             gain * step_averages + bias,
             c='red',
@@ -455,14 +440,24 @@ class MainWindow(QMainWindow):
         )
 
         # axs[1,2].set_title("Integrated BB radiance vs DC")
-        axs[1,2].legend()
-        axs[1,2].set_xlabel("Digital Count")
-        axs[1,2].set_ylabel("Band Radiance [W/m^2/sr]")
+        axs[1].legend()
+        axs[1].set_xlabel("Digital Count")
+        axs[1].set_ylabel("Band Radiance [W/m^2/sr]")
 
         self.calCanvas.figure.suptitle(f"Pixel statistics over time at location ({row},{col})")
 
         self.calCanvas.figure.tight_layout()
         self.calCanvas.draw()
+
+    def SaveCalPlot(self):
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save Calibration Plot",
+            "",
+            "PNG (*.png);;PDF (*.pdf);;SVG (*.svg)"
+        )
+        if file_path:
+            self.calCanvas.figure.savefig(file_path, dpi=300, bbox_inches='tight')
 
 # ───── NEDT CALCULATION AND DISPLAY TAB ──────────────────────────────────────────────────────
     def NEdTCalc(self):
@@ -476,13 +471,12 @@ class MainWindow(QMainWindow):
         wavelengths = txt_content[:, 0]
         response = txt_content[:, 1]
 
-        self.temps = self.bb_start_temp + self.bb_temp_step * np.arange(self.calibration_data.number_of_steps)
+        self.temps = self.bb_start_temp + self.bb_temp_step * np.arange(self.calibration_data._number_of_steps)
         self.NEdT_Data = lit.NEDT.NEdT_calculation(self.calibration_data.image_stack, self.calibration_data.coefficients, self.temps, wavelengths, response)
         
         # Image-wide percentiles across all pixels at each temperature step
         self.median_NEDT  = np.percentile(self.NEdT_Data, 50,  axis=(0,1))  # same as median
-        
-
+        self.active_NEdT = True
         self.ViewNEDTInfo(self.NEdT_Data[0,0,:], self.temps)
 
     def ViewNEDTInfo(self, nedt_pixel, temps, row=1, col=1):
@@ -506,75 +500,6 @@ class MainWindow(QMainWindow):
         axs.grid(True, linestyle='--', alpha=0.4)
         self.nedtCanvas.figure.tight_layout()
         self.nedtCanvas.draw()
-
-# ───── HELPER FUNCTIONS ───────────────────────────────────────────────────────
-    def UpdateProgress(self, phase, current, total):
-        percent = int((current / total) * 100)
-
-        if phase == "loading":
-            self.ui.progressbarCal.setFormat("Loading images... %p%")
-        elif phase == "calibrating":
-            self.ui.progressbarCal.setFormat("Calibrating pixels... %p%")
-        elif phase == "ascension":
-            self.ui.progressbarCal.setFormat("Calculating ascension regions... %p%")
-
-        self.ui.progressbarCal.setValue(percent)
-
-    def OnPixelInputChanged(self):
-        tab_index = self.ui.tabWidget.currentIndex()
-        if tab_index == 1:  # Calibration tab is active
-            if hasattr(self, 'calibration_data') and self.calibration_data is not None:
-                try:
-                    row = int(self.ui.rowTextEdit.toPlainText())
-                    col = int(self.ui.colTextEdit.toPlainText())
-                except ValueError:
-                    return  # Invalid input, ignore the change
-                row = self.calibration_data.coefficients.shape[0] - 1 if row >= self.calibration_data.coefficients.shape[0] else row
-                col = self.calibration_data.coefficients.shape[1] - 1 if col >= self.calibration_data.coefficients.shape[1] else col
-                row = 0 if row < 0 else row
-                col = 0 if col < 0 else col
-                pixel_stats = prepare_pixel(self.calibration_data, row, col)
-                self.ui.labelGainCoeff.setText(f"{pixel_stats[7]:.4f}")
-                self.ui.labelBiasCoeff.setText(f"{pixel_stats[8]:.4f}")
-                self.ViewCalibrationInfo(pixel_stats)
-
-        elif tab_index == 2: # NEdT tab is active
-            if hasattr(self, 'NEdT_Data') and self.NEdT_Data is not None:
-                try:
-                    row = int(self.ui.texteditNEDTRow.toPlainText())
-                    col = int(self.ui.texteditNEDTCol.toPlainText())
-                except ValueError:
-                    return  # Invalid input, ignore the change
-                row = self.NEdT_Data.shape[0] - 1 if row >= self.NEdT_Data.shape[0] else row
-                col = self.NEdT_Data.shape[1] - 1 if col >= self.NEdT_Data.shape[1] else col
-                row = 0 if row < 0 else row
-                col = 0 if col < 0 else col
-                nedt_pixel = self.NEdT_Data[row, col,:]
-                self.ViewNEDTInfo(nedt_pixel, self.temps, row=row, col=col)
-
-    def OnTabChanged(self, index):
-        """Triggered when tab is switched"""
-
-        tab_text = self.ui.tabWidget.tabText(index)
-        # Act based on index or label
-        if index == 0:
-            return
-        elif index == 1:
-            self.Calibration()
-        elif index == 2:
-            self.NEdTCalc()
-        elif index == 3:
-            self.Stability()
-
-# ───── PROJECT VARIABLES AND DATA HANDLING ──────────────────────────────────────────────────────
-    def SaveImage(self):
-        # Add to Variables section
-        var_item = QTreeWidgetItem(self.varsRoot)
-        var_item.setText(0, os.path.basename(self.item_selected))
-
-        # Store the ACTUAL image object
-        var_item.setData(0, Qt.UserRole, self.current_image)
-
 
 # ───── STABILITY ANALYSIS TAB ──────────────────────────────────────────────────────
     def Stability(self):
@@ -669,6 +594,75 @@ class MainWindow(QMainWindow):
         self.ui.progressbarStability.setValue(0)
         self.ui.progressbarStability.setFormat("Error")
         QMessageBox.critical(self, "Stability Error", f"An error occurred:\n{message}")
+
+# ───── HELPER FUNCTIONS ───────────────────────────────────────────────────────
+    def UpdateProgress(self, phase, current, total):
+        percent = int((current / total) * 100)
+
+        if phase == "loading":
+            self.ui.progressbarCal.setFormat("Loading images... %p%")
+        elif phase == "calibrating":
+            self.ui.progressbarCal.setFormat("Calibrating pixels... %p%")
+        elif phase == "ascension":
+            self.ui.progressbarCal.setFormat("Calculating ascension regions... %p%")
+
+        self.ui.progressbarCal.setValue(percent)
+
+    def OnPixelInputChanged(self):
+        tab_index = self.ui.tabWidget.currentIndex()
+        if tab_index == 1:  # Calibration tab is active
+            if hasattr(self, 'calibration_data') and self.calibration_data is not None:
+                try:
+                    row = int(self.ui.rowTextEdit.toPlainText())
+                    col = int(self.ui.colTextEdit.toPlainText())
+                except ValueError:
+                    return  # Invalid input, ignore the change
+                row = self.calibration_data.coefficients.shape[0] - 1 if row >= self.calibration_data.coefficients.shape[0] else row
+                col = self.calibration_data.coefficients.shape[1] - 1 if col >= self.calibration_data.coefficients.shape[1] else col
+                row = 0 if row < 0 else row
+                col = 0 if col < 0 else col
+                pixel_stats = prepare_pixel(self.calibration_data, row, col)
+                self.ui.labelGainCoeff.setText(f"{pixel_stats[7]:.4f}")
+                self.ui.labelBiasCoeff.setText(f"{pixel_stats[8]:.4f}")
+                self.ViewCalibrationInfo(pixel_stats)
+
+        elif tab_index == 2: # NEdT tab is active
+            if hasattr(self, 'NEdT_Data') and self.NEdT_Data is not None:
+                try:
+                    row = int(self.ui.texteditNEDTRow.toPlainText())
+                    col = int(self.ui.texteditNEDTCol.toPlainText())
+                except ValueError:
+                    return  # Invalid input, ignore the change
+                row = self.NEdT_Data.shape[0] - 1 if row >= self.NEdT_Data.shape[0] else row
+                col = self.NEdT_Data.shape[1] - 1 if col >= self.NEdT_Data.shape[1] else col
+                row = 0 if row < 0 else row
+                col = 0 if col < 0 else col
+                nedt_pixel = self.NEdT_Data[row, col,:]
+                self.ViewNEDTInfo(nedt_pixel, self.temps, row=row, col=col)
+
+    def OnTabChanged(self, index):
+        """Triggered when tab is switched"""
+
+        tab_text = self.ui.tabWidget.tabText(index)
+        # Act based on index or label
+        if index == 0:
+            return
+        elif index == 1:
+            self.Calibration()
+        elif index == 2:
+            if not self.active_NEdT:
+                self.NEdTCalc()
+        elif index == 3:
+            self.Stability()
+
+# ───── PROJECT VARIABLES AND DATA HANDLING ──────────────────────────────────────────────────────
+    def SaveImage(self):
+        # Add to Variables section
+        var_item = QTreeWidgetItem(self.varsRoot)
+        var_item.setText(0, os.path.basename(self.item_selected))
+
+        # Store the ACTUAL image object
+        var_item.setData(0, Qt.UserRole, self.current_image)
 
 # ───── PROJECT SAVE AND LOAD FUNCTIONALITY ──────────────────────────────────────────────────────
     def SaveProject(self):
