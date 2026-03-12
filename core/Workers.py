@@ -9,21 +9,23 @@ class CalibrationWorker(QObject):
     finished = Signal(object)          # calibration array
     error = Signal(str)
 
-    def __init__(self, directory : str, filetype, rsr: str=None, bb_start_temp=None, bb_temp_step=None):
+    def __init__(self, directory : str, filetype, rsr: str=None, bb_start_temp : float =None, bb_temp_step : float =None, environmental_temperature : float = None):
         super().__init__()
         self.directory = directory
         self.filetype = filetype
         self.rsr = rsr
+        self.environmental_temperature = environmental_temperature
         self.bb_start_temp = bb_start_temp
         self.bb_temp_step = bb_temp_step
     def run(self):
         factory = lit.CalibrationDataFactory()
-
+        print(self.environmental_temperature)
         config = lit.BlackbodyCalibrationConfig(
             directory=self.directory,
             filetype=self.filetype,
             blackbody_temperature=self.bb_start_temp,
             temperature_step=self.bb_temp_step,
+            environmental_temperature = self.environmental_temperature,
             rsr=self.rsr,
             progress_cb=self._progress_callback
         )
@@ -42,6 +44,8 @@ class StabilityWorker(QObject):
 
     def __init__(self, directory : str, filetype: str ="rjpeg"):
         super().__init__()
+        print(directory)
+        print(filetype)
         self.directory = directory
         self.filetype = filetype
 

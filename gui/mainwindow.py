@@ -2,7 +2,6 @@
 
 import sys
 import os
-from tkinter import NE
 from PySide6.QtGui import QPixmap, QImage
 from PySide6.QtWidgets import QApplication, QInputDialog, QMainWindow, QFileDialog, QMessageBox, QListWidget, QListWidgetItem, QLabel, QTreeWidgetItem
 from PySide6.QtCore import QObject, Signal, Qt, QThread
@@ -50,9 +49,13 @@ class MainWindow(QMainWindow):
         self.active_calibration = False
         self.index = None
         self.active_stability = False
-        self.list_of_valid_files = [] 
+        self.list_of_image_files = [] 
         self.selected_rsr_path = None
         self.active_NEdT = None
+        self.calibration_data = None
+        self.NEdT_Data = None
+        self.stability_data = None
+        self.loading_project = False
 
         # ---- Matplotlib canvas inside calibration tab ----
         self.calCanvas = MplCanvas(self.ui.calibrationPlotContainer)
@@ -90,6 +93,7 @@ class MainWindow(QMainWindow):
         self.ui.actionOpen_Project.triggered.connect(self.LoadProject)
         self.ui.actionOpenOther.triggered.connect(self.OpenOther)
         self.ui.pushSaveCal.clicked.connect(self.SaveCalPlot)
+        self.ui.pushSaveNEDT.clicked.connect(self.SaveNEdTPlot)
 
 
 # ───── FILE AND DIRECTORY HANDLING ──────────────────────────────────────────────────────
@@ -152,20 +156,16 @@ class MainWindow(QMainWindow):
             os.path.join(directory, f)
             for f in os.listdir(directory)
             ])
-            # Look at files in directory, anything after period is the filetype # 
-
-            self.filetype = os.path.splitext(current_dir_files[0])[1][1:].lower()  # get file extension without dot, in lowercase
-
             
-            if self.filetype == "jpg":
-                self.filetype = "rjpeg"  # treat as rjpeg if jpg FIX THIS LATER
-
-                
             Factory = lit.ImageDataFactory()
-            self.list_of_valid_files = [f for f in current_dir_files if Factory.is_valid_image_file(f, self.filetype)]
+
+            # Look at files in directory, determine filetype of imagery (ASSUMES IMAGERY IS SORTED FIRST)
+            self.filetype = Factory.get_image_filetype(current_dir_files[0])
+            # Validates the rest of the directory
+            self.list_of_image_files = [f for f in current_dir_files if Factory.is_valid_image_file(f, self.filetype)]
 
             # Setting bounds for QSlider
-            num_files = len(self.list_of_valid_files)
+            num_files = len(self.list_of_image_files)
             self.ui.frameSelection.setMinimum(0)
             self.ui.frameSelection.setMaximum(max(0, num_files - 1))
 
@@ -212,19 +212,20 @@ class MainWindow(QMainWindow):
 
         root.setExpanded(False)
 
+    def AddFileToTree(self, file):
+        list_item = QTreeWidgetItem(self.filesRoot)
+        list_item.setText(0, os.path.basename(file))
+        list_item.setData(0, Qt.UserRole, file)
+        
     def OnTreeClicked(self, item, column):
         data = item.data(0, Qt.UserRole)
-
         if isinstance(data, str) and os.path.isfile(data):
-            # disk file
-
-            # Find index of file in list_of_valid_files
+            # Find index of file in list_of_image_files
             try:
-                self.index = self.list_of_valid_files.index(data)
+                self.index = self.list_of_image_files.index(data)
                 self.OnFrameChanged()
             except ValueError:
                 self.index = 0
-
             self.item_selected = data
             self.ui.frameSelection.setValue(self.index)
         elif isinstance(data, lit.ImageData):   # your image class
@@ -234,6 +235,8 @@ class MainWindow(QMainWindow):
         elif isinstance(data, str) and os.path.isdir(data):
             # Directory
             self.item_selected = data
+            ImageFactory = lit.ImageDataFactory()
+            self.filetype = ImageFactory.get_image_filetype(os.path.join(data, os.listdir(data)[0]))
 
 # ───── IMAGE DISPLAY TAB ──────────────────────────────────────────────────────
     def ViewImage(self):
@@ -241,9 +244,10 @@ class MainWindow(QMainWindow):
             return
 
         Factory = lit.ImageDataFactory()
+        filetype = Factory.get_image_filetype(self.item_selected)
         config = lit.ImageDataConfig(
             filename=self.item_selected,
-            fileformat=self.filetype
+            fileformat=filetype
         )
 
         self.current_image = Factory.create_from_file(config)
@@ -252,11 +256,10 @@ class MainWindow(QMainWindow):
         pixmap = QPixmap.fromImage(qimg)
 
         self.ui.imagelabel.setPixmap(pixmap)
-        self.ui.labelFrameCount.setText(f"Current Frame: {self.index+1} of {len(self.list_of_valid_files)}.")
+        self.ui.labelFrameCount.setText(f"Current Frame: {self.index+1} of {len(self.list_of_image_files)}.")
 
     def NextFrame(self):
-        max_index = len(self.list_of_valid_files)
-        if self.index < max_index:
+        if self.index < len(self.list_of_image_files):
             self.index = self.index + 1
             self.ui.frameSelection.setValue(self.index)
             self.OnFrameChanged()
@@ -273,8 +276,8 @@ class MainWindow(QMainWindow):
         self.OnFrameChanged()
 
     def OnFrameChanged(self):
-        if 0 <= self.index < len(self.list_of_valid_files):
-            self.item_selected = self.list_of_valid_files[self.index]
+        if 0 <= self.index < len(self.list_of_image_files):
+            self.item_selected = self.list_of_image_files[self.index]
             self.ViewImage()
 
 # ───── CALIBRATION DISPLAY TAB ──────────────────────────────────────────────────────
@@ -296,7 +299,7 @@ class MainWindow(QMainWindow):
                 if dlg.exec():   # User pressed Start
                     settings = dlg.getValues()
 
-                    # environment_temp = float(settings["environment_temp"])
+                    environment_temp = float(settings["environment_temp"])
                     bb_start_temp = float(settings["bb_start_temp"])
                     bb_temp_step = float(settings["bb_temp_step"])
 
@@ -307,7 +310,7 @@ class MainWindow(QMainWindow):
                         self.selected_rsr_path = select_rsr(self.filesRoot, self)
                         if self.selected_rsr_path is None:
                             return  # user cancelled or no file found
-                        self.StartCalibration(self.item_selected, self.filetype, rsr=self.selected_rsr_path, bb_start_temp=bb_start_temp, bb_temp_step=bb_temp_step)
+                        self.StartCalibration(self.item_selected, self.filetype, rsr=self.selected_rsr_path, bb_start_temp=bb_start_temp, bb_temp_step=bb_temp_step, environmental_temperature=environment_temp)
                     else:
                         fwhm_width = float(settings["fwhm_width"])
                         fwhm_center = float(settings["fwhm_center"])
@@ -321,7 +324,7 @@ class MainWindow(QMainWindow):
                         response[response.shape[0]-1] = 0.5
                         rsr_sim = np.array([wavelengths, response])
 
-                        self.StartCalibration(self.item_selected, self.filetype, rsr = rsr_sim, bb_start_temp=bb_start_temp, bb_temp_step=bb_temp_step)
+                        self.StartCalibration(self.item_selected, self.filetype, rsr=rsr_sim, bb_start_temp=bb_start_temp, bb_temp_step=bb_temp_step, environmental_temperature=environment_temp)
                 else:
                     QMessageBox.critical(
                     self,
@@ -335,9 +338,9 @@ class MainWindow(QMainWindow):
                 "A calibration is already in progress. Please wait for it to finish before starting a new one."
             )
 
-    def StartCalibration(self, directory, filetype, rsr=None, bb_start_temp=None, bb_temp_step=None):
+    def StartCalibration(self, directory, filetype, rsr=None, bb_start_temp=None, bb_temp_step=None, environmental_temperature = None):
         self.thread = QThread()
-        self.worker = CalibrationWorker(directory, filetype, rsr, bb_start_temp, bb_temp_step)
+        self.worker = CalibrationWorker(directory, filetype, rsr, bb_start_temp, bb_temp_step, environmental_temperature)
 
         self.worker.moveToThread(self.thread)
 
@@ -465,14 +468,20 @@ class MainWindow(QMainWindow):
             self.selected_rsr_path = select_rsr(self.filesRoot, self)
         if not self.selected_rsr_path:
             return
-
-        print(f"Using RSR file for NEdT calculation: {self.selected_rsr_path}")
+        
         txt_content = np.loadtxt(self.selected_rsr_path, skiprows=1, delimiter=',')
         wavelengths = txt_content[:, 0]
         response = txt_content[:, 1]
 
-        self.temps = self.bb_start_temp + self.bb_temp_step * np.arange(self.calibration_data._number_of_steps)
+        self.temps = self.calibration_data.blackbody_temperature + self.calibration_data.temperature_step * np.arange(self.calibration_data._number_of_steps)
         self.NEdT_Data = lit.NEDT.NEdT_calculation(self.calibration_data.image_stack, self.calibration_data.coefficients, self.temps, wavelengths, response)
+
+        # Add to Variables section
+        var_item = QTreeWidgetItem(self.varsRoot)
+        var_item.setText(0, str(os.path.basename(self.item_selected) + "_NEdT_array"))
+
+        # Store the ACTUAL image object
+        var_item.setData(0, Qt.UserRole, self.NEdT_Data)
         
         # Image-wide percentiles across all pixels at each temperature step
         self.median_NEDT  = np.percentile(self.NEdT_Data, 50,  axis=(0,1))  # same as median
@@ -500,6 +509,16 @@ class MainWindow(QMainWindow):
         axs.grid(True, linestyle='--', alpha=0.4)
         self.nedtCanvas.figure.tight_layout()
         self.nedtCanvas.draw()
+
+    def SaveNEdTPlot(self):
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Save NEdT Plot",
+            "",
+            "PNG (*.png);;PDF (*.pdf);;SVG (*.svg)"
+        )
+        if file_path:
+            self.nedtCanvas.figure.savefig(file_path, dpi=300, bbox_inches='tight')
 
 # ───── STABILITY ANALYSIS TAB ──────────────────────────────────────────────────────
     def Stability(self):
@@ -643,7 +662,11 @@ class MainWindow(QMainWindow):
     def OnTabChanged(self, index):
         """Triggered when tab is switched"""
 
-        tab_text = self.ui.tabWidget.tabText(index)
+        # Skips tab changes when loading an old project
+        if self.loading_project == True:
+            self.loading_project = False
+            return None
+        
         # Act based on index or label
         if index == 0:
             return
@@ -677,10 +700,22 @@ class MainWindow(QMainWindow):
 
         # Default project subfolder name based on current directory selection
         default_name = (
-            os.path.basename(self.item_selected)
-            if self.item_selected else "lwir_project"
+        os.path.basename(self.item_selected)
+        if self.item_selected else "lwir_project"
         )
-        project_folder = os.path.join(folder_path, default_name)
+
+        # Ask user to name the output directory
+        dir_name, ok = QInputDialog.getText(
+        self,
+        "Name Output Directory",
+        "Enter a name for the output directory:",
+        text=default_name
+        )
+
+        if not ok or not dir_name.strip():
+            return
+
+        project_folder = os.path.join(folder_path, dir_name.strip())
 
         try:
             save_project(self, project_folder)

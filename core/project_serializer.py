@@ -21,6 +21,7 @@ import os
 import traceback
 import numpy as np
 from datetime import datetime
+from .pixel_stats import prepare_pixel
 
 PROJECT_SCHEMA_VERSION = "1.1"
 MANIFEST_FILENAME      = "project.json"
@@ -42,6 +43,7 @@ def save_project(main_window, folder_path: str) -> None:
         "arrays_file":    ARRAYS_FILENAME,
         "files":          {},
         "calibration":    {},
+        "NEdT":           {},
         "stability":      {},
         "image":          {},
         "ui":             {},
@@ -52,7 +54,7 @@ def save_project(main_window, folder_path: str) -> None:
         "list_of_files":     getattr(mw, "list_of_files",     []),
         "item_selected":     getattr(mw, "item_selected",     ""),
         "current_index":     getattr(mw, "index",             None),
-        "list_of_valid_files": getattr(mw, "list_of_valid_files", []),
+        "list_of_image_files": getattr(mw, "list_of_image_files", []),
     }
 
     # ── 2. Calibration data ───────────────────────────────────────────────────
@@ -66,8 +68,11 @@ def save_project(main_window, folder_path: str) -> None:
         "filetype":              "rjpeg",
         "blackbody_temperature": None,
         "temperature_step":      None,
+        "environmental_temperature": None,
         "deriv_threshold":       None,
         "window_fraction":       None,
+        "_number_of_steps":      None,
+        "_array_of_avg_coords": None
     }
 
     if cal_data is not None:
@@ -81,7 +86,8 @@ def save_project(main_window, folder_path: str) -> None:
 
         # Config scalars are now stored directly on BlackbodyCalibration (Option A).
         for key in ("directory", "filetype", "blackbody_temperature",
-                    "temperature_step", "deriv_threshold", "window_fraction"):
+                    "temperature_step", "deriv_threshold", "window_fraction", 
+                    "environmental_temperature", "_number_of_steps", "_array_of_avg_coords"):
             val = getattr(cal_data, key, None)
             if val is not None:
                 cal_manifest[key] = val
@@ -94,17 +100,48 @@ def save_project(main_window, folder_path: str) -> None:
             cal_manifest["rsr_type"] = "path"
             cal_manifest["rsr_path"] = rsr
 
+
     manifest["calibration"] = cal_manifest
 
-    # ── 3. Stability data ─────────────────────────────────────────────────────
+    # ── 3. NEdT Data ───────────────────────────────────────────────────
+    NEdT_manifest = {
+            "coefficients_used":      None,
+            "image_stack_used":       None,
+            "rsr_type":              None,
+            "rsr_path":              None,
+            "directory":             None,
+            "filetype":              None,
+            "blackbody_temperature": None,
+            "temperature_step":      None,
+            "environmental_temperature": None
+        }
+    NEdT_Data = getattr(mw,"NEdT_Data",None)
+    if NEdT_Data is not None:
+        arrays["NEdT_Data"] = NEdT_Data
+        NEdT_manifest = {
+            "coefficients_used":      cal_manifest["has_coefficients"],
+            "image_stack_used":       cal_manifest["has_image_stack"],
+            "rsr_type":              cal_manifest["rsr_type"],
+            "rsr_path":              cal_manifest["rsr_path"],
+            "directory":             cal_manifest["directory"],
+            "filetype":              "rjpeg",
+            "blackbody_temperature": cal_manifest["blackbody_temperature"],
+            "temperature_step":      cal_manifest["temperature_step"],
+            "environmental_temperature": cal_manifest["environmental_temperature"]
+        }
+
+    manifest["NEdT"] = NEdT_manifest
+
+    # ── 4. Stability data ─────────────────────────────────────────────────────
     stab = getattr(mw, "stability_data", None)
     if stab is not None:
         arrays["stability_data"]                    = stab
         manifest["stability"]["has_stability_data"] = True
+        manifest["stability"]["stability_var_name"] = "placeholder"
     else:
         manifest["stability"]["has_stability_data"] = False
 
-    # ── 4. Current image path ─────────────────────────────────────────────────
+    # ── 5. Current image path ─────────────────────────────────────────────────
     # FIX [3]: item_selected may be a directory. Use list_of_valid_files[index]
     # to get a concrete file path for ImageDataFactory on load.
     current_file_path = ""
@@ -123,7 +160,7 @@ def save_project(main_window, folder_path: str) -> None:
 
     manifest["image"] = {"current_image_path": current_file_path}
 
-    # ── 5. UI state ───────────────────────────────────────────────────────────
+    # ── 6. UI state ───────────────────────────────────────────────────────────
     manifest["ui"] = {
         "active_tab_index": mw.ui.tabWidget.currentIndex(),
         "tab_enabled": {
@@ -156,9 +193,11 @@ def _print_save_summary(manifest: dict, arrays: dict):
     cal  = manifest.get("calibration", {})
     stab = manifest.get("stability",   {})
     img  = manifest.get("image",       {})
+    nedt = manifest.get("NEdT",        {})
     print(f"  coefficients   : {'YES' if cal.get('has_coefficients')   else 'no'}")
     print(f"  image_stack    : {'YES' if cal.get('has_image_stack')    else 'no'}")
     print(f"  stability_data : {'YES' if stab.get('has_stability_data') else 'no'}")
+    print(f"  NEdT data      : {'YES' if nedt.get('coefficients_used')   else 'no'}")
     print(f"  rsr            : {cal.get('rsr_type', 'none')}")
     print(f"  cal directory  : {cal.get('directory', 'n/a')}")
     print(f"  current image  : {img.get('current_image_path') or '(none — directory was selected)'}")
@@ -217,10 +256,11 @@ def load_project(main_window, folder_path: str) -> None:
         mw.filesRoot.takeChildren()
         added_dirs = set()
         for path in mw.list_of_files:
-            parent_dir = path if os.path.isdir(path) else os.path.dirname(path)
-            if parent_dir and parent_dir not in added_dirs and os.path.isdir(parent_dir):
-                mw.AddDirectoryToTree(parent_dir)
-                added_dirs.add(parent_dir)
+            if path and path not in added_dirs and os.path.isdir(path):
+                mw.AddDirectoryToTree(path)
+                added_dirs.add(path)
+            elif path and os.path.isfile(path):
+                mw.AddFileToTree(path)
 
         print(f"[ProjectSerializer]   item_selected : {mw.item_selected}")
         print(f"[ProjectSerializer]   current_index : {mw.index}")
@@ -240,7 +280,7 @@ def load_project(main_window, folder_path: str) -> None:
             label = (os.path.basename(cal_manifest.get("directory") or "")
                      or "calibration_data")
             var_item = QTreeWidgetItem(mw.varsRoot)
-            var_item.setText(0, label)
+            var_item.setText(0, label + "_cal_coefficients")
             var_item.setData(0, Qt.UserRole, restored)
 
             print(f"[ProjectSerializer]   coefficients : "
@@ -253,17 +293,33 @@ def load_project(main_window, folder_path: str) -> None:
         print("[ProjectSerializer] ERROR restoring calibration data:")
         traceback.print_exc()
 
-    # ── 3. Stability data ─────────────────────────────────────────────────────
+    # ── 3. NEdT data ───────────────────────────────────────────────────
+    print("[ProjectSerializer] Restoring NEdT data...")
+    try:
+        NEdT_manifest = manifest.get("NEdT", {})
+        if NEdT_manifest.get("coefficients_used") and "NEdT_Data" in npz:
+            mw.NEdT_Data = npz["NEdT_Data"]
+
+            label = (os.path.basename(NEdT_manifest.get("directory")))
+            var_item = QTreeWidgetItem(mw.varsRoot)
+            var_item.setText(0, label + "_NEdT_array")
+            var_item.setData(0, Qt.UserRole, mw.NEdT_Data)
+
+            print(f"[ProjectSerializer]   NEdT Array : "
+                  f"{mw.NEdT_Data.shape if mw.NEdT_Data is not None else 'None'}")
+        else:
+            print("[ProjectSerializer]   No NEdT data in project file.")
+    except Exception:
+        print("[ProjectSerializer] ERROR restoring NEdT data:")
+        traceback.print_exc()
+
+    # ── 4. Stability data ─────────────────────────────────────────────────────
     print("[ProjectSerializer] Restoring stability data...")
     try:
         if manifest.get("stability", {}).get("has_stability_data") and "stability_data" in npz:
             mw.stability_data = npz["stability_data"]
-            ax = mw.stabilityCanvas.get_single_grid()
-            ax.plot(mw.stability_data)
-            mw.stabilityCanvas.draw()
-
             var_item = QTreeWidgetItem(mw.varsRoot)
-            var_item.setText(0, "stability_data")
+            var_item.setText(0, manifest.get("stability", {}).get("stability_var_name"))
             var_item.setData(0, Qt.UserRole, mw.stability_data)
             print(f"[ProjectSerializer]   shape: {mw.stability_data.shape}")
         else:
@@ -272,7 +328,7 @@ def load_project(main_window, folder_path: str) -> None:
         print("[ProjectSerializer] ERROR restoring stability data:")
         traceback.print_exc()
 
-    # ── 4. Current image ──────────────────────────────────────────────────────
+    # ── 5. Current image ──────────────────────────────────────────────────────
     print("[ProjectSerializer] Restoring current image...")
     try:
         img_path = manifest.get("image", {}).get("current_image_path", "")
@@ -294,9 +350,10 @@ def load_project(main_window, folder_path: str) -> None:
         print("[ProjectSerializer] ERROR restoring current image:")
         traceback.print_exc()
 
-    # ── 5. UI state ───────────────────────────────────────────────────────────
+    # ── 6. UI state ───────────────────────────────────────────────────────────
     print("[ProjectSerializer] Restoring UI state...")
     try:
+        mw.loading_project = True
         ui      = manifest.get("ui", {})
         tab_map = {
             "imageTab":     mw.ui.imageTab,
@@ -316,6 +373,23 @@ def load_project(main_window, folder_path: str) -> None:
         # Set active tab last to avoid spurious OnTabChanged triggers
         mw.ui.tabWidget.setCurrentIndex(ui.get("active_tab_index", 0))
         print(f"[ProjectSerializer]   Active tab: {ui.get('active_tab_index', 0)}")
+
+        # Plot all existing variables to save user from re-running computations
+        if mw.calibration_data is not None:
+            pixel_stats = prepare_pixel(mw.calibration_data, 0, 0)
+            mw.ViewCalibrationInfo(pixel_stats)
+        if mw.NEdT_Data is not None and mw.calibration_data is not None:
+            mw.temps = mw.calibration_data.blackbody_temperature + mw.calibration_data.temperature_step * np.arange(mw.calibration_data._number_of_steps)
+            mw.median_NEDT  = np.percentile(mw.NEdT_Data, 50,  axis=(0,1))  # same as median
+            mw.ViewNEDTInfo(mw.NEdT_Data[0,0,:], mw.temps)
+        if mw.stability_data is not None:
+            ax = mw.stabilityCanvas.get_single_grid()
+            ax.plot(mw.stability_data)
+            ax.set_title("Mean pixel value across frames")
+            ax.set_xlabel("Frame number")
+            ax.set_ylabel("Mean Digital Count")
+            mw.stabilityCanvas.draw()
+
     except Exception:
         print("[ProjectSerializer] ERROR restoring UI state:")
         traceback.print_exc()
@@ -350,70 +424,9 @@ class _RestoredCalibrationData:
         self.filetype              = cal_manifest.get("filetype",              "rjpeg")
         self.blackbody_temperature = cal_manifest.get("blackbody_temperature", None)
         self.temperature_step      = cal_manifest.get("temperature_step",      None)
+        self.environmental_temperature = cal_manifest.get("environmenttal_temperature", None)
         self.deriv_threshold       = cal_manifest.get("deriv_threshold",       3.0)
         self.window_fraction       = cal_manifest.get("window_fraction",       0.001)
+        self._number_of_steps      = cal_manifest.get("_number_of_steps", None)
+        self._array_of_avg_coords = cal_manifest.get("_array_of_avg_coords", None)
 
-    def find_ascensions(self, image_stack, deriv_threshold=3,
-                        window_fraction=0.001, progress_cb=None):
-        """Mirrors BlackbodyCalibration.find_ascensions() exactly."""
-        if progress_cb:
-            progress_cb(phase="ascension", current=0, total=1)
-
-        means             = np.mean(image_stack, axis=(0, 1))
-        first_derivative  = np.gradient(means)
-        second_derivative = np.gradient(first_derivative)
-
-        stdev_first_deriv  = np.std(first_derivative)
-        stdev_second_deriv = np.std(second_derivative)
-        mean_first_deriv   = np.mean(first_derivative)
-        mean_second_deriv  = np.mean(second_derivative)
-
-        change_in_temp = [0]
-        for i in range(first_derivative.shape[0]):
-            if first_derivative[i] >= (3 * stdev_first_deriv + mean_first_deriv):
-                change_in_temp.append(i)
-        change_in_temp.append(first_derivative.shape[0])
-
-        ascension_start, ascension_end = [], []
-        for i in range(second_derivative.shape[0]):
-            if second_derivative[i] >= (3 * stdev_second_deriv + mean_second_deriv):
-                ascension_start.append(i)
-            if second_derivative[i] <= (-3 * stdev_second_deriv + mean_second_deriv):
-                ascension_end.append(i)
-
-        window              = int(len(means)) * 0.01
-        ascensions          = False
-        array_of_avg_coords = None
-
-        for i in range(len(change_in_temp) - 1):
-            temp_ascension = []
-            for j in range(len(ascension_start)):
-                if change_in_temp[i] - window <= ascension_start[j] <= change_in_temp[i] + window:
-                    temp_ascension.append(ascension_start[j])
-            for j in range(len(ascension_end)):
-                if change_in_temp[i] - window <= ascension_end[j] <= change_in_temp[i] + window:
-                    temp_ascension.append(ascension_end[j])
-
-            if not temp_ascension:
-                continue
-
-            begin_average = min(temp_ascension)
-            end_average   = max(temp_ascension)
-
-            if change_in_temp[i + 1] > change_in_temp[i] + window:
-                if not ascensions:
-                    array_of_avg_coords = np.array([0, begin_average, end_average])
-                    ascensions = True
-                else:
-                    array_of_avg_coords = np.append(
-                        array_of_avg_coords, [begin_average, end_average])
-
-        if array_of_avg_coords is None:
-            array_of_avg_coords = np.array([0, len(means)])
-        else:
-            array_of_avg_coords = np.append(array_of_avg_coords, len(means))
-
-        if progress_cb:
-            progress_cb(phase="ascension", current=1, total=1)
-
-        return array_of_avg_coords
