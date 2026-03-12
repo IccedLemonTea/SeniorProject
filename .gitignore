@@ -10,9 +10,6 @@ __pycache__/
 *.qmlc
 
 # Build / packaging
-build/
-dist/
-*.spec
 
 # Virtual environments
 .venv/
