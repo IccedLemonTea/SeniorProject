@@ -33,7 +33,7 @@ block_cipher = None   # Set to a Cipher object if you want to encrypt bytecode
 #   Windows  update WINDOWS_LIT_ROOT to wherever you cloned LWIRImageTool.
 #   e.g. r"C:\Users\cjw9009\Desktop\LWIRImageTool"
 #
-WINDOWS_LIT_ROOT = r"C:\Users\cjw9009\Desktop\LWIRImageTool"
+WINDOWS_LIT_ROOT = r"C:\Users\Cooper\OneDrive - rit.edu\Desktop\Senior Project\sUAS Docs\Code\LWIRImageTool"
 UNIX_LIT_ROOT    = str(Path.home() / "Desktop" / "LWIRImageTool")
 
 if sys.platform == "win32":
@@ -161,10 +161,10 @@ binaries = [
 # This is the core step  PyInstaller traces all imports starting
 # from your entry point (mainwindow.py) and builds the dependency graph.
 a = Analysis(
-    ['gui/mainwindow.py'],      # Entry point  your main script
+    ['gui/mainwindow.py'],      # Entry point your main script
     pathex=[
         '.',                    # Root of your project
-        LWIR_ROOT,              # LWIRImageTool source  cross-platform path
+        LWIR_ROOT,              # LWIRImageTool source cross-platform path
     ],
     binaries=binaries,
     datas=datas,
