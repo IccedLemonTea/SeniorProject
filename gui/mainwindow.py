@@ -424,6 +424,7 @@ class MainWindow(QMainWindow):
             end   = int(self.calibration_data._array_of_avg_coords[2 * step + 1])
             axs[0].axvspan(start, end, alpha=0.15, color='gray')
         axs[0].legend()
+        axs[0].grid()
         axs[0].set_xlabel("Frame number")
         axs[0].set_ylabel("Digital Count")
 
@@ -439,11 +440,12 @@ class MainWindow(QMainWindow):
             step_averages,
             gain * step_averages + bias,
             c='red',
-            label='line of best fit'
+            label=f'Fit line (y={gain:.4f}x + {bias:.4f})'
         )
 
         # axs[1,2].set_title("Integrated BB radiance vs DC")
         axs[1].legend()
+        axs[1].grid()
         axs[1].set_xlabel("Digital Count")
         axs[1].set_ylabel("Band Radiance [W/m^2/sr]")
 
