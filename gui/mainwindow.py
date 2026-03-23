@@ -302,15 +302,19 @@ class MainWindow(QMainWindow):
                     environment_temp = float(settings["environment_temp"])
                     bb_start_temp = float(settings["bb_start_temp"])
                     bb_temp_step = float(settings["bb_temp_step"])
+                    self.collection_rate = float(settings["collect_rate_input"])
 
-                    self.bb_start_temp = bb_start_temp
-                    self.bb_temp_step = bb_temp_step
 
                     if settings["use_rsr"]:
                         self.selected_rsr_path = select_rsr(self.filesRoot, self)
                         if self.selected_rsr_path is None:
                             return  # user cancelled or no file found
-                        self.StartCalibration(self.item_selected, self.filetype, rsr=self.selected_rsr_path, bb_start_temp=bb_start_temp, bb_temp_step=bb_temp_step, environmental_temperature=environment_temp)
+                        self.StartCalibration(self.item_selected,
+                                            self.filetype, 
+                                            rsr=self.selected_rsr_path, 
+                                            bb_start_temp=bb_start_temp, 
+                                            bb_temp_step=bb_temp_step, 
+                                            environmental_temperature=environment_temp)
                     else:
                         fwhm_width = float(settings["fwhm_width"])
                         fwhm_center = float(settings["fwhm_center"])
@@ -324,7 +328,12 @@ class MainWindow(QMainWindow):
                         response[response.shape[0]-1] = 0.5
                         rsr_sim = np.array([wavelengths, response])
 
-                        self.StartCalibration(self.item_selected, self.filetype, rsr=rsr_sim, bb_start_temp=bb_start_temp, bb_temp_step=bb_temp_step, environmental_temperature=environment_temp)
+                        self.StartCalibration(self.item_selected, 
+                                            self.filetype, 
+                                            rsr=rsr_sim, 
+                                            bb_start_temp=bb_start_temp, 
+                                            bb_temp_step=bb_temp_step, 
+                                            environmental_temperature=environment_temp)
                 else:
                     QMessageBox.critical(
                     self,
@@ -406,19 +415,21 @@ class MainWindow(QMainWindow):
         col = pixel_stats[10]
         chunk_size = pixel_stats[11]
 
+        time_minutes = np.arange(len(individual_pixel)*self.collection_rate/60)
+        x_vals_scaled = average_x_vals*self.collection_rate/60
         # ---- 1 ----
-        axs[0].scatter(
-            range(len(individual_pixel)),
+        axs[0].scatter(time_minutes,
             individual_pixel,
             c='blue', s=2, marker='o',
             label='collected data'
         )
         axs[0].scatter(
-            average_x_vals,
+            x_vals_scaled,
             step_averages,
             c='red', s=30, marker='o',
             label='averages'
         )
+
         for step in range(self.calibration_data._number_of_steps):
             start = int(self.calibration_data._array_of_avg_coords[2 * step])
             end   = int(self.calibration_data._array_of_avg_coords[2 * step + 1])

@@ -19,7 +19,6 @@ class CalibrationWorker(QObject):
         self.bb_temp_step = bb_temp_step
     def run(self):
         factory = lit.CalibrationDataFactory()
-        print(self.environmental_temperature)
         config = lit.BlackbodyCalibrationConfig(
             directory=self.directory,
             filetype=self.filetype,
