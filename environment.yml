@@ -1,0 +1,14 @@
+name: GUI_Tool
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.13 # Example Python version
+  - Pyside6
+  - pyinstaller
+  - numpy
+  - Pillow
+  - matplotlib
+  - scipy
+  - pydantic
+  - spectral
