@@ -44,6 +44,10 @@ class CalibrationDialog(QDialog):
         self.tempStepInput = QLineEdit()
         self.tempStepInput.setPlaceholderText("e.g. 1.0 [K]")
         Templayout.addWidget(self.tempStepInput)
+        self.collectRateInput = QLineEdit()
+        self.collectRateInput = QLineEdit("e.g. 0.333 [Hz]")
+        Templayout.addWidget(self.collectRateInput)
+
 
         # ──── FWHM Input ─────────────────────────────────────────────────────
         self.fwhmWLabel = QLabel("Enter FWHM width (µm):")
@@ -109,5 +113,6 @@ class CalibrationDialog(QDialog):
             "num_samples": self.numSamplesInput.text(),
             "environment_temp": self.tempInput.text(),
             "bb_start_temp": self.bbTempInput.text(),
-            "bb_temp_step": self.tempStepInput.text()
+            "bb_temp_step": self.tempStepInput.text(),
+            "collect_rate_input": self.collectRateInput.text()
         }
