@@ -3,43 +3,37 @@
 #  Longwave Infrared Tool (LIT)
 #
 #  Usage:
-#      pyinstaller LIT.spec
+#      pyinstaller SeniorProject/LIT.spec
+#
+#  Run from the root of your project, e.g.:
+#      ~/Desktop/Senior_Project_Test/
 #
 #  Output:
 #      dist/LIT/          (onedir build  recommended)
-#
-#  Notes:
-#    - Run this from the root of your project directory, i.e.
-#      the folder that contains mainwindow.py, core/, and gui/
-#    - If LWIRImageTool is a compiled extension (.pyd / .so),
-#      see the BINARIES section below
 # ============================================================
 
 import sys
 import os
 from pathlib import Path
-from PyInstaller.utils.hooks import collect_submodules, collect_data_files
+from PyInstaller.utils.hooks import collect_submodules, collect_data_files, collect_all
 
 # -- Path helpers ---------------------------------------------
-block_cipher = None   # Set to a Cipher object if you want to encrypt bytecode
+block_cipher = None
 
 # Detect platform and set the path to LWIRImageTool source accordingly.
-#
-# LWIRImageTool lives in a directory parallel to Senior_Project:
 #
 #   Linux / macOS:
 #       ~/Desktop/LWIRImageTool/LWIRImageTool/
 #
 #   Windows  update WINDOWS_LIT_ROOT to wherever you cloned LWIRImageTool.
-#   e.g. r"C:\Users\cjw9009\Desktop\LWIRImageTool"
 #
 WINDOWS_LIT_ROOT = r"C:\Users\Cooper\OneDrive - rit.edu\Desktop\Senior Project\sUAS Docs\Code\LWIRImageTool"
 UNIX_LIT_ROOT    = str(Path.home() / "Desktop" / "LWIRImageTool")
 
 if sys.platform == "win32":
-    LWIR_ROOT    = WINDOWS_LIT_ROOT
+    LWIR_ROOT = WINDOWS_LIT_ROOT
 else:
-    LWIR_ROOT    = UNIX_LIT_ROOT
+    LWIR_ROOT = UNIX_LIT_ROOT
 
 # The actual package source folder (contains __init__.py)
 LWIR_PKG = str(Path(LWIR_ROOT) / "LWIRImageTool")
@@ -52,10 +46,10 @@ if not Path(LWIR_PKG).is_dir():
         f"where LWIRImageTool is cloned on this machine."
     )
 
+# -- Collect scipy (fixes broken extension module bundling) ---
+datas_scipy, binaries_scipy, hiddenimports_scipy = collect_all('scipy')
 
 # -- Hidden imports -------------------------------------------
-# PyInstaller's static analysis sometimes misses dynamically-loaded
-# submodules. List any that cause "ModuleNotFoundError" at runtime here.
 hidden_imports = [
     # PySide6 modules used at runtime
     'PySide6.QtCore',
@@ -65,7 +59,7 @@ hidden_imports = [
     # Matplotlib backend that PySide6 uses
     'matplotlib.backends.backend_qt5agg',
 
-    # Your core subpackage  add any modules PyInstaller misses
+    # Your core subpackage
     'core.Workers',
     'core.image_display',
     'core.plot_canvas',
@@ -77,11 +71,7 @@ hidden_imports = [
     # Your gui subpackage
     'gui.ui_form',
 
-    # LWIRImageTool is pure Python  all classes re-exported via __init__.py
-    # using relative imports. List each module file explicitly so PyInstaller
-    # traces them. Do NOT use collect_submodules() here  the submodules are
-    # not independently importable as e.g. 'LWIRImageTool.Blackbody' from
-    # outside the package; PyInstaller needs them listed to find the .py files.
+    # LWIRImageTool modules
     'LWIRImageTool',
     'LWIRImageTool.Blackbody',
     'LWIRImageTool.BlackbodyCalibration',
@@ -97,11 +87,11 @@ hidden_imports = [
     'LWIRImageTool.SFMOV',
     'LWIRImageTool.StackImages',
 
-    # pydantic is used heavily by LWIRImageTool and uses dynamic imports
+    # pydantic
     'pydantic',
     'pydantic.v1',
 
-    # Other LWIRImageTool dependencies
+    # Other dependencies
     'scipy',
     'scipy.integrate',
     'scipy.constants',
@@ -109,75 +99,58 @@ hidden_imports = [
     'spectral.io.envi',
     'PIL',
     'PIL.Image',
+
+    # scipy compiled extension modules that PyInstaller misses
+    'scipy._cyutility',
+    'scipy._lib._ccallback_c',
+    'scipy._lib.messagestream',
 ]
 
-# Automatically collect submodules  collect_submodules('LWIRImageTool')
-# intentionally removed; see comment above
+# Collect submodules automatically
 hidden_imports += collect_submodules('pydantic')
 hidden_imports += collect_submodules('matplotlib')
 hidden_imports += collect_submodules('numpy')
 
+# Wire in the scipy hidden imports collected by collect_all
+hidden_imports += hiddenimports_scipy
 
 # -- Data files -----------------------------------------------
-# Tuple format: ('source path on your machine', 'destination folder in bundle')
-#
-# Add any non-Python files your app reads at runtime:
-#   - RSR .txt files bundled as defaults
-#   - Qt .ui files if you load them at runtime instead of using ui_form.py
-#   - Icons, images, config files, etc.
-#
 datas = [
-    # Explicitly copy the entire LWIRImageTool package into the bundle.
-    # This is necessary because pip install -e creates a pointer file rather
-    # than copying sources into site-packages, so PyInstaller needs to be
-    # told where the actual .py files live.
-    (LWIR_PKG, 'LWIRImageTool'),  # cross-platform  path resolved above
+    # LWIRImageTool package source
+    (LWIR_PKG, 'LWIRImageTool'),
 
-    # Example: bundle a default RSR file into a 'data' subfolder in the exe
-    # ('path/to/your/default_rsr.txt', 'data'),
+    # Your core and gui packages  PyInstaller needs these copied in explicitly
+    ('core', 'core'),
+    ('gui', 'gui'),
 
-    # Example: bundle the Qt .ui file if needed at runtime
-    # ('gui/form.ui', 'gui'),
-
-    # Collect all data files from matplotlib (fonts, style sheets, etc.)
+    # Matplotlib fonts, style sheets, etc.
     *collect_data_files('matplotlib'),
-]
 
+    # scipy data files (collected by collect_all above)
+    *datas_scipy,
+]
 
 # -- Binaries -------------------------------------------------
-# If LWIRImageTool is a compiled C extension (.pyd on Windows, .so on Linux/mac)
-# rather than pure Python, add it here so PyInstaller copies it into the bundle.
-#
-# Format: ('path/to/extension.pyd', 'destination subfolder in bundle')
-#
 binaries = [
-    # ('path/to/LWIRImageTool.cp311-win_amd64.pyd', '.'),   # Windows example
-    # ('path/to/LWIRImageTool.cpython-311-x86_64.so', '.'), # Linux example
+    # scipy compiled .so/.pyd extension modules (collected by collect_all above)
+    *binaries_scipy,
 ]
 
-
-
 # -- Analysis -------------------------------------------------
-# This is the core step  PyInstaller traces all imports starting
-# from your entry point (mainwindow.py) and builds the dependency graph.
 a = Analysis(
-    ['gui/mainwindow.py'],      # Entry point your main script
+    ['gui/mainwindow.py'],
     pathex=[
-        '.',                    # Root of your project
-        LWIR_ROOT,              # LWIRImageTool source cross-platform path
+        '.',                    # Root of your project (Senior_Project_Test/)
+        'SeniorProject',        # Where core/ and gui/ live
+        LWIR_ROOT,              # LWIRImageTool root (cross-platform)
     ],
     binaries=binaries,
     datas=datas,
     hiddenimports=hidden_imports,
-    hookspath=[],               # Custom hooks folder if you have one
+    hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[
-        # Packages you know are NOT needed  keeps the bundle smaller
-        # NOTE: do NOT exclude standard library modules like 'email',
-        # 'html', 'http', 'xmlrpc', or 'unittest'  pydantic, matplotlib,
-        # and pyparsing all depend on them transitively at import time.
-    ],
+    excludes=[],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
@@ -185,7 +158,6 @@ a = Analysis(
 )
 
 # -- PYZ archive ----------------------------------------------
-# Compresses all collected .pyc bytecode into a single archive
 pyz = PYZ(
     a.pure,
     a.zipped_data,
@@ -197,24 +169,17 @@ exe = EXE(
     pyz,
     a.scripts,
     [],
-    exclude_binaries=True,      # True = onedir mode (recommended)
-                                # False = onefile mode (slower startup)
-    name='LIT',                 # Name of the output executable
-    debug=False,                # Set True to get verbose runtime output
-                                # while troubleshooting missing imports
+    exclude_binaries=True,
+    name='LIT',
+    debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=True,                   # Compress binaries with UPX if installed
-                                # (reduces folder size, optional)
-    console=False,              # False = no terminal window (GUI app)
-                                # Set True temporarily if you need to see
-                                # print/error output while debugging
-    # icon='gui/icons/lit_icon.ico',  # Uncomment and set path to your icon
+    upx=True,
+    console=True,               # Keep True while debugging  flip to False for release
+    # icon='gui/icons/lit_icon.ico',
 )
 
 # -- COLLECT --------------------------------------------------
-# Gathers the exe, all binaries, zipfiles, and datas into the
-# final output folder:  dist/LIT/
 coll = COLLECT(
     exe,
     a.binaries,
@@ -223,5 +188,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='LIT',                 # Output folder name inside dist/
+    name='LIT',
 )
